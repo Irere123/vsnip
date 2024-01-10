@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { userEntity } from "./schema";
 import { __prod__ } from "./constants";
-import { createTokens } from "./auth";
+import { createTokens, isAuth } from "./auth";
 
 (async () => {
   console.log("Running migrations");
@@ -39,7 +39,7 @@ import { createTokens } from "./auth";
             users = await db
               .update(userEntity)
               .set({
-                avatar: profile.profileUrl,
+                avatar: profile.photos![0].value,
                 email: profile.emails![0].value,
                 googleId: profile.id,
                 username: profile.displayName,
@@ -50,7 +50,7 @@ import { createTokens } from "./auth";
               .insert(userEntity)
               .values({
                 username: profile.displayName,
-                avatar: profile.profileUrl,
+                avatar: profile.photos![0].value,
                 googleId: profile.id,
                 email: profile.emails![0].value,
               })
@@ -145,6 +145,23 @@ import { createTokens } from "./auth";
       }
     }
   );
+
+  app.get("/me", isAuth(false), async (req: any, res) => {
+    if (!req.userId) {
+      res.json({
+        user: null,
+      });
+      return;
+    }
+    const users = await db
+      .select()
+      .from(userEntity)
+      .where(eq(userEntity.id, req.userId));
+
+    res.json({
+      user: users[0],
+    });
+  });
 
   app.listen(4000, () => {
     console.log("Srever started at localhost:4000");

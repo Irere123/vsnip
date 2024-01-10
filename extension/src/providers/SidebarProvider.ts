@@ -1,5 +1,8 @@
 import * as vscode from "vscode";
 import { getNonce } from "../getNonce";
+import { Store } from "../Store";
+import { accessTokenKey, apiBaseUrl, refreshTokenKey } from "../constants";
+import { authenticate } from "../authenticate";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -22,6 +25,30 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
+        case "logout": {
+          await Store.globalState.update(accessTokenKey, "");
+          await Store.globalState.update(refreshTokenKey, "");
+          break;
+        }
+        case "login": {
+          authenticate((payload) => {
+            webviewView.webview.postMessage({
+              command: "login-complete",
+              payload,
+            });
+          });
+          break;
+        }
+        case "send-tokens": {
+          webviewView.webview.postMessage({
+            command: "init-tokens",
+            payload: {
+              accessToken: Store.getAccessToken(),
+              refreshToken: Store.getRefreshToken(),
+            },
+          });
+          break;
+        }
         case "onInfo": {
           if (!data.value) {
             return;
@@ -34,6 +61,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
             return;
           }
           vscode.window.showErrorMessage(data.value);
+          break;
+        }
+        case "tokens": {
+          await Store.globalState.update(accessTokenKey, data.accessToken);
+          await Store.globalState.update(refreshTokenKey, data.refreshToken);
           break;
         }
       }
@@ -49,10 +81,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
     );
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/hello.js")
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.js")
     );
     const styleMainUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/hello.css")
+      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.css")
     );
     const styleVSCodeUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
@@ -69,13 +101,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 					Use a content security policy to only allow loading images from https or from our extension directory,
 					and only allow scripts that have a specific nonce.
         -->
-        <meta http-equiv="Content-Security-Policy" content="default-src; img-src https: data:; style-src 'unsafe-inline' ${webview.cspSource}; script-src 'nonce-${nonce}';">
+        <meta http-equiv="Content-Security-Policy" content="default-src ${
+          apiBaseUrl.includes("https")
+            ? apiBaseUrl.replace("https", "wss")
+            : apiBaseUrl.replace("http", "ws")
+        } ${apiBaseUrl} https://x9lecdo5aj.execute-api.us-east-1.amazonaws.com; img-src https: data:; style-src 'unsafe-inline' ${
+      webview.cspSource
+    }; script-src 'nonce-${nonce}';">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<link href="${styleResetUri}" rel="stylesheet">
 				<link href="${styleVSCodeUri}" rel="stylesheet">
         <link href="${styleMainUri}" rel="stylesheet">
         <script nonce="${nonce}">
-           
+            const apiBaseUrl = ${JSON.stringify(apiBaseUrl)};
+            const tsvscode = acquireVsCodeApi();
+            let accessToken = ${JSON.stringify(Store.getAccessToken())};
+            let refreshToken = ${JSON.stringify(Store.getRefreshToken())};
         </script>
 			</head>
       <body>
