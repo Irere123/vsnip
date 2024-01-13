@@ -3,6 +3,7 @@ import { getNonce } from "../getNonce";
 import { Store } from "../Store";
 import { accessTokenKey, apiBaseUrl, refreshTokenKey } from "../constants";
 import { authenticate } from "../authenticate";
+import { ExplorePanel } from "./ExplorePanel";
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
@@ -47,6 +48,10 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
               refreshToken: Store.getRefreshToken(),
             },
           });
+          break;
+        }
+        case "explore": {
+          ExplorePanel.createOrShow(this._extensionUri);
           break;
         }
         case "onInfo": {

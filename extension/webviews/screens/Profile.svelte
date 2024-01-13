@@ -15,7 +15,7 @@
 {:else if currentUser}
   <div class="profile-container">
     <div class="top-container">
-      <ExploreIcon on:click={() => console.log("Hello world")} />
+      <ExploreIcon on:click={() => vscode.postMessage({ type: "explore" })} />
     </div>
 
     <div class="main-container">
