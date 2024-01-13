@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
   import { query } from "../shared/query";
   import type { State, User } from "../shared/types";
-  import ViewProfile from "../screens/ViewProfile.svelte";
+  import Profile from "../screens/Profile.svelte";
+  import LoadingSpinner from "../ui/LoadingSpinner.svelte";
+  import EditProfile from "../screens/EditProfile.svelte";
 
   let gotTokens = false;
   let currentUserIsLoading: boolean = true;
   let currentUser: User | null = null;
-  let lastState = tsvscode.getState();
+  let lastState = vscode.getState();
 
   let state: State = { page: "loading" };
 
@@ -30,12 +32,29 @@
     }
   }
 
+  function userToInitialFormData(u: User) {
+    return {
+      username: u.username,
+      avatar: u.avatar,
+      email: u.email,
+    };
+  }
+
+  function goToEditForm() {
+    if (currentUser) {
+      state = {
+        page: "profile-form",
+        data: userToInitialFormData(currentUser),
+      };
+    }
+  }
+
   onMount(async () => {
-    tsvscode.postMessage({ type: "send-tokens" });
+    vscode.postMessage({ type: "send-tokens" });
   });
 
   $: {
-    tsvscode.setState(state);
+    vscode.setState(state);
   }
 
   window.addEventListener("message", async (event) => {
@@ -69,18 +88,31 @@
 
 <main>
   {#if state.page === "loading"}
-    <p>loading...</p>
+    <LoadingSpinner />
   {:else if state.page === "login"}
     <div style="margin-bottom: 40px;">
       By tapping login with Google, you agree to our terms and privacy
     </div>
     <button
       on:click={() => {
-        tsvscode.postMessage({ type: "login" });
+        vscode.postMessage({ type: "login" });
       }}>Login with Google to get started</button
     >
   {:else if state.page === "view-profile"}
-    <ViewProfile {currentUser} />
+    <Profile
+      {currentUser}
+      {currentUserIsLoading}
+      onEditProfile={() => {
+        goToEditForm();
+      }}
+      onLogout={() => {
+        state = { page: "login" };
+        currentUser = null;
+      }}
+      onViewMessages={() => {}}
+    />
+  {:else if state.page === "profile-form"}
+    <EditProfile bind:data={state.data} onUpdate={() => {}} />
   {/if}
 </main>
 

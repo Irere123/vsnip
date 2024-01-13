@@ -11,9 +11,6 @@
     "Other"
   ],
   "main": "./out/extension.js",
-  "activationEvents": [
-    "onCommand:vsinder.authenticate"
-  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -37,12 +34,13 @@
     },
     "commands": [
       {
-        "command": "snip.helloWorld",
-        "title": "Hello World"
-      },
-      {
         "command": "snip.authenticate",
         "title": "Authenticate",
+        "category": "Snip"
+      },
+      {
+        "command": "snip.reloadSidebar",
+        "title": "Reload Sidebar Webview",
         "category": "Snip"
       }
     ]

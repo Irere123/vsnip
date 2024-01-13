@@ -25,7 +25,7 @@ export const mutation = async (
       accessToken = _accessToken;
       refreshToken = _refreshToken;
 
-      tsvscode.postMessage({
+      vscode.postMessage({
         type: "tokens",
         accessToken: _accessToken,
         refreshToken: _refreshToken,
@@ -35,7 +35,7 @@ export const mutation = async (
     const d = await r.json();
     return d;
   } catch (err) {
-    tsvscode.postMessage({
+    vscode.postMessage({
       type: "onError",
       value: err.message,
     });

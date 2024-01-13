@@ -20,11 +20,17 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand("snip.helloWorld", () => {
-      vscode.window.showInformationMessage("Hello World from Snip!");
-    })
-  );
+  vscode.commands.registerCommand("snip.reloadSidebar", async () => {
+    await vscode.commands.executeCommand("workbench.action.closeSidebar");
+    await vscode.commands.executeCommand(
+      "workbench.view.extension.snip-sidebar-view"
+    );
+    setTimeout(() => {
+      vscode.commands.executeCommand(
+        "workbench.action.webview.openDeveloperTools"
+      );
+    }, 500);
+  });
 }
 
 export function deactivate() {}

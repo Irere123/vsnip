@@ -14,7 +14,7 @@ export const query = async (path: string) => {
     if (_accessToken && _refreshToken) {
       accessToken = _accessToken;
       refreshToken = _refreshToken;
-      tsvscode.postMessage({
+      vscode.postMessage({
         type: "tokens",
         accessToken: _accessToken,
         refreshToken: _refreshToken,
@@ -23,7 +23,7 @@ export const query = async (path: string) => {
     const d = await r.json();
     return d;
   } catch (err) {
-    tsvscode.postMessage({
+    vscode.postMessage({
       type: "onError",
       value: err.message,
     });
