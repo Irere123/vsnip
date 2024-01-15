@@ -116,9 +116,19 @@
       onViewMessages={() => {}}
     />
   {:else if state.page === "profile-form"}
-    <EditProfile bind:data={state.data} onUpdate={() => {}} />
+    <EditProfile
+      onNewState={(s) => {
+        state = s;
+      }}
+      bind:data={state.data}
+      onUpdate={() => {}}
+    />
   {:else if state.page === "explore"}
-    <Explore />
+    <Explore
+      onNewState={(s) => {
+        state = s;
+      }}
+    />
   {/if}
 </main>
 

@@ -1,11 +1,13 @@
 <script lang="ts">
-  import type { Profile, FeedResponse } from "../shared/types";
+  import type { Profile, FeedResponse, State } from "../shared/types";
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
+  import Backbar from "../ui/Backbar.svelte";
   import { query } from "../shared/query";
   import { onMount } from "svelte";
 
   let loadingState: "init" | "ready" | "more" = "init";
   let profiles: Profile[];
+  export let onNewState: (s: State) => void;
 
   onMount(async () => {
     try {
@@ -21,7 +23,10 @@
   {#if loadingState === "init"}
     <LoadingSpinner />
   {:else}
-    <h2>Explore</h2>
+    <div class="header">
+      <h2>Explore</h2>
+      <Backbar onBack={() => onNewState({ page: "view-profile" })} />
+    </div>
     {#each profiles as p}
       <div class="user_card">
         <img
@@ -45,6 +50,11 @@
     flex-direction: column;
     gap: 20px;
     margin: 10px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
   }
 
   .user_card {
