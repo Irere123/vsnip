@@ -15,6 +15,13 @@
       "when": 1705130744562,
       "tag": "0001_flawless_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1705321347546,
+      "tag": "0002_chief_sasquatch",
+      "breakpoints": true
     }
   ]
 }
