@@ -3,10 +3,8 @@ import cors from "cors";
 import express from "express";
 import passport from "passport";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { createClient } from "redis";
-import RedisStore from "connect-redis";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "./db";
 import { userEntity } from "./schema";
@@ -74,15 +72,6 @@ import { createTokens, isAuth } from "./auth";
 
   app.set("trust proxy", 1);
 
-  // Initialize client.
-  let redisClient = createClient();
-  redisClient.connect().catch(console.error);
-
-  // Initialize store.
-  let redisStore = new RedisStore({
-    client: redisClient,
-  });
-
   app.use(
     cors({
       origin: "*",
@@ -95,6 +84,7 @@ import { createTokens, isAuth } from "./auth";
       ],
     })
   );
+
 
   app.use(express.json());
   app.use(passport.initialize());
@@ -161,6 +151,16 @@ import { createTokens, isAuth } from "./auth";
     res.json({
       user: users[0],
     });
+  });
+
+  app.get("/feed", isAuth(), async (req: any, res) => {
+    const userId = req.userId;
+
+    const users = await db.execute(
+      sql`select * from users where id != ${userId}`
+    );
+
+    return res.json({ profiles: users.rows });
   });
 
   app.listen(4000, () => {

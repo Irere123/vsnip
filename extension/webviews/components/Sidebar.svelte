@@ -5,6 +5,7 @@
   import Profile from "../screens/Profile.svelte";
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
   import EditProfile from "../screens/EditProfile.svelte";
+  import Explore from "../screens/Explore.svelte";
 
   let gotTokens = false;
   let currentUserIsLoading: boolean = true;
@@ -105,6 +106,9 @@
       onEditProfile={() => {
         goToEditForm();
       }}
+      onExplore={() => {
+        state = { page: "explore" };
+      }}
       onLogout={() => {
         state = { page: "login" };
         currentUser = null;
@@ -113,6 +117,8 @@
     />
   {:else if state.page === "profile-form"}
     <EditProfile bind:data={state.data} onUpdate={() => {}} />
+  {:else if state.page === "explore"}
+    <Explore />
   {/if}
 </main>
 

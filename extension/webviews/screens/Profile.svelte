@@ -8,6 +8,7 @@
   export let onEditProfile: () => void;
   export let onViewMessages: () => void;
   export let onLogout: () => void;
+  export let onExplore: () => void;
 </script>
 
 {#if currentUserIsLoading}
@@ -15,7 +16,7 @@
 {:else if currentUser}
   <div class="profile-container">
     <div class="top-container">
-      <ExploreIcon on:click={() => vscode.postMessage({ type: "explore" })} />
+      <ExploreIcon on:click={onExplore} />
     </div>
 
     <div class="main-container">

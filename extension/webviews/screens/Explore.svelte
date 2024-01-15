@@ -21,16 +21,34 @@
   {#if loadingState === "init"}
     <LoadingSpinner />
   {:else}
+    <h2>Explore</h2>
     {#each profiles as p}
-      <p>{p.username}</p>
-      <img src={p.avatar} alt="" />
-      <button>message</button>
+      <div class="user_card">
+        <img
+          src={p.avatar}
+          alt={`${p.username}'s profile'`}
+          width="50"
+          height="50"
+        />
+        <div>
+          <p>{p.username}</p>
+          <button>message</button>
+        </div>
+      </div>
     {/each}
   {/if}
 </main>
 
 <style>
   main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     margin: 10px;
+  }
+
+  .user_card {
+    display: flex;
+    gap: 10px;
   }
 </style>
