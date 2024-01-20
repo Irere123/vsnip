@@ -6,6 +6,8 @@
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
   import EditProfile from "../screens/EditProfile.svelte";
   import Explore from "../screens/Explore.svelte";
+  import Messages from "../screens/Messages.svelte";
+  import Conversation from "../screens/Conversation.svelte";
 
   let gotTokens = false;
   let currentUserIsLoading: boolean = true;
@@ -113,7 +115,9 @@
         state = { page: "login" };
         currentUser = null;
       }}
-      onViewMessages={() => {}}
+      onViewMessages={() => {
+        state = { page: "conversation" };
+      }}
     />
   {:else if state.page === "profile-form"}
     <EditProfile
@@ -125,6 +129,21 @@
     />
   {:else if state.page === "explore"}
     <Explore
+      onNewState={(s) => {
+        state = s;
+      }}
+    />
+  {:else if state.page === "messages"}
+    <Messages
+      onNewState={(s) => {
+        state = s;
+      }}
+    />
+  {:else if state.page === "conversation"}
+    <Conversation
+      bind:currentUser
+      {currentUserIsLoading}
+      bind:state
       onNewState={(s) => {
         state = s;
       }}

@@ -3,6 +3,7 @@
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
   import Backbar from "../ui/Backbar.svelte";
   import { query } from "../shared/query";
+  import { mutation } from "../shared/mutation";
   import { onMount } from "svelte";
 
   let loadingState: "init" | "ready" | "more" = "init";
@@ -37,7 +38,12 @@
         />
         <div>
           <p>{p.username}</p>
-          <button>message</button>
+          <button
+            on:click={async () => {
+              await mutation("/conversation", { userId: p.id });
+              onNewState({ page: "messages" });
+            }}>message</button
+          >
         </div>
       </div>
     {/each}
