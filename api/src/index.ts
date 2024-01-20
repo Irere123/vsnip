@@ -4,12 +4,14 @@ import express from "express";
 import passport from "passport";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 
 import { db } from "./db";
-import { userEntity } from "./schema";
+import { conversationEntity, messageEntity, userEntity } from "./schema";
 import { __prod__ } from "./constants";
 import { createTokens, isAuth } from "./auth";
+import { getUserIdOrder } from "./utils";
+import createHttpError from "http-errors";
 
 (async () => {
   console.log("Running migrations");
@@ -42,6 +44,7 @@ import { createTokens, isAuth } from "./auth";
                 googleId: profile.id,
                 username: profile.displayName,
               })
+              .where(eq(userEntity.googleId, profile.id))
               .returning();
           } else {
             users = await db
@@ -84,7 +87,6 @@ import { createTokens, isAuth } from "./auth";
       ],
     })
   );
-
 
   app.use(express.json());
   app.use(passport.initialize());
@@ -162,6 +164,107 @@ import { createTokens, isAuth } from "./auth";
 
     return res.json({ profiles: users.rows });
   });
+
+  app.get("/conversations/:cursor", isAuth(), async (req: any, res) => {
+    const userId = req.userId;
+
+    const conv = await db.execute(sql`
+    select
+    case
+      when u.id = co."userId1" then co.read2
+      else co.read1
+    end "read",
+    co.id "conversationId",
+    u.id "userId", u."username", u."avatar", date_part('epoch', co."created_at") * 1000 "created_at",
+    (select json_build_object('text',
+    case when char_length(text) > 40
+    then substr(text, 0, 40) || '...'
+    else text
+    end
+    , 'created_at', date_part('epoch', m."created_at")*1000)
+    from messages m
+    where (m.recepient_id = co."userId1" and m."sender_id" = co."userId2")
+    or
+    (m."sender_id" = co."userId1" and m.recepient_id = co."userId2")
+    order by m."created_at" desc limit 1) message
+    from conversations co
+    inner join "users" u on u.id != ${userId} and (u.id = co."userId1" or u.id = co."userId2")
+    where (co."userId1" = ${userId} or co."userId2" = ${userId}) and co.unfriended = false
+    limit 150`);
+
+    res.json({ conversations: conv.rows });
+  });
+
+  app.post("/conversation", isAuth(), async (req: any, res) => {
+    const { userId } = req.body;
+
+    const already_exists = await db
+      .select()
+      .from(conversationEntity)
+      .where(
+        or(
+          and(
+            eq(conversationEntity.userId1, userId),
+            eq(conversationEntity.userId2, req.userId)
+          ),
+          and(
+            eq(conversationEntity.userId1, req.userId),
+            eq(conversationEntity.userId2, userId)
+          )
+        )
+      );
+
+    if (already_exists[0]) {
+      return res.json({ conv: already_exists[0], ok: true });
+    }
+
+    const conv = await db
+      .insert(conversationEntity)
+      .values(getUserIdOrder(userId, req.userId))
+      .returning();
+
+    return res.json({ conv: conv[0], ok: true });
+  });
+
+  app.get(
+    "/messages/:userId/:cursor?",
+    isAuth(),
+    async (req: any, res, next) => {
+      try {
+        req.params.cursor = req.params.cursor
+          ? parseInt(req.params.cursor)
+          : undefined;
+      } catch (err) {
+        next(createHttpError(400, err.message));
+        return;
+      }
+
+      const { userId } = req.params;
+
+      const messages = await db
+        .select()
+        .from(messageEntity)
+        .where(
+          or(
+            and(
+              eq(messageEntity.recepientId, userId),
+              eq(messageEntity.senderId, req.userId)
+            ),
+            and(
+              eq(messageEntity.senderId, userId),
+              eq(messageEntity.recepientId, req.userId)
+            )
+          )
+        )
+        .limit(21)
+        .orderBy(desc(messageEntity.createdAt));
+
+      res.json({
+        messages: messages.slice(0, 20),
+        hasMore: messages.length === 21,
+      });
+    }
+  );
 
   app.listen(4000, () => {
     console.log("Srever started at localhost:4000");
