@@ -4,16 +4,19 @@
     Conversation,
     ConversationState,
     ConversationsResponse,
+    Message,
     State,
     User,
+    WebsocketMessages,
   } from "../shared/types";
   import Backbar from "../ui/Backbar.svelte";
   import Button from "../ui/Button.svelte";
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
   import Messages from "./Messages.svelte";
   import DoOnMount from "../components/DoOnMount.svelte";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import ConversationCard from "../ui/ConversationCard.svelte";
+  import { getSocket } from "../shared/io";
 
   export let currentUserIsLoading: boolean;
   export let currentUser: User | null;
@@ -39,6 +42,22 @@
     return 0;
   }
 
+  function onMessage(newMessage: Message) {
+    conversations = conversations
+      .map<any>((c) =>
+        c.userId == newMessage.senderId || c.userId == newMessage.recipientId
+          ? {
+              ...c,
+              message: {
+                text: newMessage.text,
+                createdAt: newMessage.createdAt,
+              },
+            }
+          : c
+      )
+      .sort(compareConversations);
+  }
+
   async function fetchMatches() {
     loading = true;
     try {
@@ -49,8 +68,21 @@
     loading = false;
   }
 
+  function onWebSocketEvent(e: MessageEvent) {
+    const payload: WebsocketMessages = e.data;
+
+    if (payload.type === "new-message") {
+      onMessage(payload.message);
+    }
+  }
+
   onMount(async () => {
     await fetchMatches();
+    getSocket().addEventListener("message", onWebSocketEvent);
+  });
+
+  onDestroy(() => {
+    getSocket().removeEventListener("message", onWebSocketEvent);
   });
 </script>
 
@@ -75,8 +107,8 @@
                   value: { userId: state.user.id, unmatchOrReject: "unmatch" },
                 });
               }
-            }}
-          />
+            }}>Remove</Button
+          >
         </div>
       </div>
     {/if}
@@ -86,7 +118,7 @@
 {#if state.user && currentUser && isInConversations}
   <Messages
     onUnmatch={() => {}}
-    onMessage={() => {}}
+    {onMessage}
     myId={currentUser.id}
     user={state.user}
   />
@@ -101,7 +133,7 @@
 {:else}
   <div class="container">
     {#if conversations.length === 0}
-      <div>No matches</div>
+      <div>No conversations</div>
     {/if}
     {#each conversations as conv, i}
       <ConversationCard
@@ -118,3 +150,11 @@
     {/each}
   </div>
 {/if}
+
+<style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+</style>

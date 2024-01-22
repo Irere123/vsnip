@@ -7,7 +7,9 @@ export const messageEntity = pgTable("messages", {
   id: uuid("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  matchId: uuid("conversation_id").references(() => conversationEntity.id),
+  conversationId: uuid("conversation_id").references(
+    () => conversationEntity.id
+  ),
   senderId: uuid("sender_id").references(() => userEntity.id, {
     onDelete: "cascade",
   }),

@@ -41,7 +41,7 @@
           <button
             on:click={async () => {
               await mutation("/conversation", { userId: p.id });
-              onNewState({ page: "messages" });
+              onNewState({ page: "conversation" });
             }}>message</button
           >
         </div>

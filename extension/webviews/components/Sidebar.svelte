@@ -133,12 +133,6 @@
         state = s;
       }}
     />
-  {:else if state.page === "messages"}
-    <Messages
-      onNewState={(s) => {
-        state = s;
-      }}
-    />
   {:else if state.page === "conversation"}
     <Conversation
       bind:currentUser

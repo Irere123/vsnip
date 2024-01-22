@@ -1,10 +1,13 @@
 require("dotenv-safe").config();
 import cors from "cors";
 import express from "express";
+import http from "http";
 import passport from "passport";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { and, desc, eq, or, sql } from "drizzle-orm";
+import WebSocket, { Server } from "ws";
+import url from "url";
 
 import { db } from "./db";
 import { conversationEntity, messageEntity, userEntity } from "./schema";
@@ -12,12 +15,24 @@ import { __prod__ } from "./constants";
 import { createTokens, isAuth } from "./auth";
 import { getUserIdOrder } from "./utils";
 import createHttpError from "http-errors";
+import { verify } from "jsonwebtoken";
 
 (async () => {
   console.log("Running migrations");
 
   await migrate(db, { migrationsFolder: "drizzle" });
   console.log("Migrated successfully");
+
+  const wsUsers: Record<
+    string,
+    { ws: WebSocket; openChatUserId: string | null }
+  > = {};
+
+  const wsSend = (key: string, v: any) => {
+    if (key in wsUsers) {
+      wsUsers[key].ws.send(JSON.stringify(v));
+    }
+  };
 
   passport.use(
     new GoogleStrategy(
@@ -266,7 +281,101 @@ import createHttpError from "http-errors";
     }
   );
 
-  app.listen(4000, () => {
-    console.log("Srever started at localhost:4000");
+  app.post("/message", isAuth(), async (req: any, res) => {
+    const { conversationId, recepientId, text } = req.body;
+    const m = await db
+      .insert(messageEntity)
+      .values({ conversationId, recepientId, text, senderId: req.userId })
+      .returning();
+
+    wsSend(m[0].recepientId!, { type: "new-message", message: m[0] });
+
+    res.json({ message: m[0] });
+  });
+
+  const server = http.createServer(app);
+  const wss = new Server({ noServer: true });
+
+  wss.on("connection", (ws: WebSocket, userId: string) => {
+    if (!userId) {
+      ws.terminate();
+    }
+
+    wsUsers[userId] = { openChatUserId: null, ws };
+
+    ws.on("message", (e: any) => {
+      const {
+        type,
+        userId: openChatUserId,
+      }: { type: "message-open"; userId: string } = JSON.parse(e);
+
+      if (type === "message-open") {
+        if (userId in wsUsers) {
+          wsUsers[userId].openChatUserId = openChatUserId;
+        }
+      }
+    });
+
+    ws.on("close", () => {
+      delete wsUsers[userId];
+    });
+  });
+
+  server.on("upgrade", async function upgrade(request, socket, head) {
+    const good = (userId: string) => {
+      wss.handleUpgrade(request, socket, head, function done(ws) {
+        wss.emit("connection", ws, userId);
+      });
+    };
+
+    const bad = () => {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+    };
+
+    try {
+      const {
+        query: { accessToken, refreshToken },
+      } = url.parse(request.url!, true);
+
+      if (
+        !accessToken ||
+        !refreshToken ||
+        typeof accessToken !== "string" ||
+        typeof refreshToken !== "string"
+      ) {
+        return bad();
+      }
+
+      try {
+        const data = verify(
+          accessToken,
+          process.env.ACCESS_TOKEN_SECRET!
+        ) as any;
+
+        return good(data.userId);
+      } catch {}
+
+      try {
+        const data = verify(
+          refreshToken,
+          process.env.REFRESH_TOKEN_SECRET as string
+        ) as any;
+        const user = await db
+          .select()
+          .from(userEntity)
+          .where(eq(userEntity.id, data.userId));
+
+        if (!user[0] || user[0].tokenVersion !== data.tokenVersion) {
+          return bad();
+        }
+
+        return good(data.userId);
+      } catch {}
+    } catch {}
+  });
+
+  server.listen(process.env.PORT ? parseInt(process.env.PORT) : 4000, () => {
+    console.log("Server started");
   });
 })();
