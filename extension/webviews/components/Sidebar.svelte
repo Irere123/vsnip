@@ -89,61 +89,59 @@
   });
 </script>
 
-<main>
-  {#if state.page === "loading"}
-    <LoadingSpinner />
-  {:else if state.page === "login"}
-    <div style="margin-bottom: 40px;">
-      By tapping login with Google, you agree to our terms and privacy
-    </div>
-    <button
-      on:click={() => {
-        vscode.postMessage({ type: "login" });
-      }}>Login with Google to get started</button
-    >
-  {:else if state.page === "view-profile"}
-    <Profile
-      {currentUser}
-      {currentUserIsLoading}
-      onEditProfile={() => {
-        goToEditForm();
-      }}
-      onExplore={() => {
-        state = { page: "explore" };
-      }}
-      onLogout={() => {
-        state = { page: "login" };
-        currentUser = null;
-      }}
-      onViewMessages={() => {
-        state = { page: "conversation" };
-      }}
-    />
-  {:else if state.page === "profile-form"}
-    <EditProfile
-      onNewState={(s) => {
-        state = s;
-      }}
-      bind:data={state.data}
-      onUpdate={() => {}}
-    />
-  {:else if state.page === "explore"}
-    <Explore
-      onNewState={(s) => {
-        state = s;
-      }}
-    />
-  {:else if state.page === "conversation"}
-    <Conversation
-      bind:currentUser
-      {currentUserIsLoading}
-      bind:state
-      onNewState={(s) => {
-        state = s;
-      }}
-    />
-  {/if}
-</main>
+{#if state.page === "loading"}
+  <LoadingSpinner />
+{:else if state.page === "login"}
+  <div style="margin-bottom: 40px;">
+    By tapping login with Google, you agree to our terms and privacy
+  </div>
+  <button
+    on:click={() => {
+      vscode.postMessage({ type: "login" });
+    }}>Login with Google to get started</button
+  >
+{:else if state.page === "view-profile"}
+  <Profile
+    {currentUser}
+    {currentUserIsLoading}
+    onEditProfile={() => {
+      goToEditForm();
+    }}
+    onExplore={() => {
+      state = { page: "explore" };
+    }}
+    onLogout={() => {
+      state = { page: "login" };
+      currentUser = null;
+    }}
+    onViewMessages={() => {
+      state = { page: "conversation" };
+    }}
+  />
+{:else if state.page === "profile-form"}
+  <EditProfile
+    onNewState={(s) => {
+      state = s;
+    }}
+    bind:data={state.data}
+    onUpdate={() => {}}
+  />
+{:else if state.page === "explore"}
+  <Explore
+    onNewState={(s) => {
+      state = s;
+    }}
+  />
+{:else if state.page === "conversation"}
+  <Conversation
+    bind:currentUser
+    {currentUserIsLoading}
+    bind:state
+    onNewState={(s) => {
+      state = s;
+    }}
+  />
+{/if}
 
 <style>
   p {

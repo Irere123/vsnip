@@ -86,34 +86,32 @@
   });
 </script>
 
-<main>
-  <Backbar
-    onBack={() => {
-      if (state.page === "conversation" && state.user) {
-        onNewState({ page: "conversation" });
-      } else {
-        onNewState({ page: "view-profile" });
-      }
-    }}
-  >
-    {#if state.user && isInConversations}
-      <div style="display: flex;">
-        <div style="margin-right: 10px;">
-          <Button
-            on:click={() => {
-              if (state.user) {
-                vscode.postMessage({
-                  type: "report",
-                  value: { userId: state.user.id, unmatchOrReject: "unmatch" },
-                });
-              }
-            }}>Remove</Button
-          >
-        </div>
+<Backbar
+  onBack={() => {
+    if (state.page === "conversation" && state.user) {
+      onNewState({ page: "conversation" });
+    } else {
+      onNewState({ page: "view-profile" });
+    }
+  }}
+>
+  {#if state.user && isInConversations}
+    <div style="display: flex;">
+      <div style="margin-right: 10px;">
+        <Button
+          on:click={() => {
+            if (state.user) {
+              vscode.postMessage({
+                type: "report",
+                value: { userId: state.user.id, unmatchOrReject: "unmatch" },
+              });
+            }
+          }}>Remove</Button
+        >
       </div>
-    {/if}
-  </Backbar>
-</main>
+    </div>
+  {/if}
+</Backbar>
 
 {#if state.user && currentUser && isInConversations}
   <Messages

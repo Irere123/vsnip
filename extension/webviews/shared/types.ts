@@ -70,7 +70,7 @@ export interface Conversation {
   message: {
     text: string;
     createdAt: string;
-  } | null;
+  };
   createdAt: string;
 }
 

@@ -116,14 +116,16 @@
   >
     {user.username}
   </h2>
-  <div>
-    {#each messageGroups as mg, i}
-      <div>
-        {#each mg as msg}
-          <p>{msg.text}</p>
-        {/each}
-      </div>
-    {/each}
+  <div class="panel">
+    <div class="msg_container">
+      {#each messageGroups as mg, i}
+        <div>
+          {#each mg as msg}
+            <p>{msg.text}</p>
+          {/each}
+        </div>
+      {/each}
+    </div>
     {#if hasMore}
       <div
         style="margin-bottom: 10px; display: flex; align-items: center; justify-content: center;"
@@ -141,27 +143,46 @@
           Load more
         </button>
       </div>
-      <form
-        on:submit|preventDefault={async () => {
-          if (!text) {
-            return;
-          }
-          loadingMessageSent = true;
-          try {
-            const { message } = await mutation(`/message`, {
-              recipientId: user.id,
-              text,
-              conversationId: user.conversationId,
-            });
-            messages = [message, ...messages];
-            onMessage(message);
-          } catch {}
-          loadingMessageSent = false;
-          text = "";
-        }}
-      >
-        <input placeholder="Type a message" bind:value={text} />
-      </form>
     {/if}
+
+    <form
+      on:submit|preventDefault={async () => {
+        if (!text) {
+          return;
+        }
+        loadingMessageSent = true;
+        try {
+          const { message } = await mutation(`/message`, {
+            recepientId: user.id,
+            text,
+            conversationId: user.conversationId,
+          });
+          messages = [message, ...messages];
+          onMessage(message);
+        } catch {}
+        loadingMessageSent = false;
+        text = "";
+      }}
+    >
+      <input placeholder="Type a message" bind:value={text} />
+    </form>
   </div>
 {/if}
+
+<style>
+  .panel {
+    height: 100%;
+    display: flex;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+
+  .msg_container {
+    padding: 0px var(--container-paddding);
+    display: flex;
+    flex-direction: column-reverse;
+    flex: 1;
+    min-height: 0px;
+    overflow-y: auto;
+  }
+</style>
