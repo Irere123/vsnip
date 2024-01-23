@@ -10,6 +10,7 @@
   import LoadingSpinner from "../ui/LoadingSpinner.svelte";
   import { getSocket } from "../shared/io";
   import { mutation } from "../shared/mutation";
+  import MessageGroups from "../components/MessageGroups.svelte";
 
   export let user: NonNullable<ConversationState["user"]>;
   export let myId: string;
@@ -108,22 +109,31 @@
 {:else if loading}
   <LoadingSpinner />
 {:else}
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+  <!-- svelte-ignore missing-declaration -->
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <h2
     on:click={() => {
       vscode.postMessage({ type: "view-code-card", value: user });
     }}
-    class="display-name"
+    class="display_name"
   >
     {user.username}
   </h2>
   <div class="panel">
     <div class="msg_container">
       {#each messageGroups as mg, i}
-        <div>
-          {#each mg as msg}
-            <p>{msg.text}</p>
-          {/each}
-        </div>
+        <MessageGroups
+          {i}
+          {mg}
+          {myId}
+          photoUrl={user.avatar}
+          userInfo={{
+            avatar: user.avatar,
+            id: user.id,
+            username: user.username,
+          }}
+        />
       {/each}
     </div>
     {#if hasMore}

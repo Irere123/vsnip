@@ -123,6 +123,9 @@
     onNewState={(s) => {
       state = s;
     }}
+    onNext={(u) => {
+      currentUser = u;
+    }}
     bind:data={state.data}
     onUpdate={() => {}}
   />

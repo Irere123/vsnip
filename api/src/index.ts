@@ -207,8 +207,6 @@ import { verify } from "jsonwebtoken";
     where (co."userId1" = ${userId} or co."userId2" = ${userId}) and co.unfriended = false
     limit 150`);
 
-    console.log();
-
     res.json({ conversations: conv.rows });
   });
 
@@ -257,7 +255,6 @@ import { verify } from "jsonwebtoken";
       }
 
       const { userId } = req.params;
-      console.log("UserId", userId, "userid2", req.userId);
 
       const messages = await db
         .select()
@@ -297,16 +294,16 @@ import { verify } from "jsonwebtoken";
   });
 
   app.put("/user", isAuth(), async (req: any, res) => {
-    const { userId, email, username } = req.body;
+    const { email, username } = req.body;
 
-    if (!userId || !email || !username) {
+    if (!email || !username) {
       return createHttpError(400, "Not authorized");
     }
 
     const user = await db
       .update(userEntity)
       .set({ email, username })
-      .where(eq(userEntity.id, userId));
+      .where(eq(userEntity.id, req.userId));
 
     return res.json({ user });
   });

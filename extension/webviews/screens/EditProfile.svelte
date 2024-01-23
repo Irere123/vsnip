@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { ProfileFormData, State } from "../shared/types";
+  import type { ProfileFormData, State, User } from "../shared/types";
   import Backbar from "../ui/Backbar.svelte";
   import { query } from "../shared/query";
   import InputField from "../ui/InputField.svelte";
+  import { mutation } from "../shared/mutation";
 
   export let data: ProfileFormData;
   export let onUpdate: () => void;
+  export let onNext: (u: User) => void;
   export let onNewState: (s: State) => void;
 
   onMount(async () => {
@@ -26,7 +28,7 @@
   <InputField
     name={"username"}
     label={"Username"}
-    value={data.username}
+    bind:value={data.username}
     max={2}
     min={60}
   />
@@ -34,8 +36,26 @@
     type="email"
     name={"email"}
     label={"Email"}
-    value={data.email}
+    bind:value={data.email}
     max={2}
     min={60}
   />
+
+  <button
+    on:click={async () => {
+      try {
+        const { email, username } = data;
+
+        const { user } = await mutation(
+          "/user",
+          { email, username },
+          { method: "PUT" }
+        );
+        console.log(user);
+        onNext(user);
+      } catch {}
+    }}
+  >
+    Update
+  </button>
 </form>

@@ -10,7 +10,11 @@
   <img src={conversation.avatar} alt="" width="30" height="30" />
   <div>
     <p class="username">{conversation.username}</p>
-    <p>{`say hi to ${conversation.username}`}</p>
+    {#if conversation.message}
+      <p>{conversation.message.text}</p>
+    {:else}
+      <p>say hi to {conversation.username}</p>
+    {/if}
   </div>
 </div>
 
