@@ -16,7 +16,7 @@ import { getUserIdOrder } from "./utils";
 import createHttpError from "http-errors";
 import { verify } from "jsonwebtoken";
 
-require("dotenv-safe").config({ allowEmptyValues: __prod__ });
+require("dotenv").config();
 
 (async () => {
   console.log("Running migrations");
