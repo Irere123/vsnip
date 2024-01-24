@@ -1,4 +1,3 @@
-require("dotenv-safe").config();
 import cors from "cors";
 import express from "express";
 import http from "http";
@@ -16,6 +15,8 @@ import { createTokens, isAuth } from "./auth";
 import { getUserIdOrder } from "./utils";
 import createHttpError from "http-errors";
 import { verify } from "jsonwebtoken";
+
+require("dotenv-safe").config({ allowEmptyValues: __prod__ });
 
 (async () => {
   console.log("Running migrations");
