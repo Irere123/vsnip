@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1705130726676,
-      "tag": "0000_worried_havok",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1705130744562,
-      "tag": "0001_flawless_stone_men",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1705321347546,
-      "tag": "0002_chief_sasquatch",
+      "when": 1706160104736,
+      "tag": "0000_overrated_satana",
       "breakpoints": true
     }
   ]
