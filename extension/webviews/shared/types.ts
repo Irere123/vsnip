@@ -47,7 +47,7 @@ export interface Profile {
 export interface Message {
   id: string;
   senderId: string;
-  recipientId: string;
+  recepientId: string;
   text: string;
   createdAt: number;
 }
