@@ -1,9 +1,13 @@
 {
-  "name": "snip",
-  "displayName": "Snip",
-  "publisher": "irere",
+  "name": "vs-snip",
+  "displayName": "VS-Snip",
+  "publisher": "IrereEmmanuel",
   "description": "Share code with your peers",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Irere123/vsnip"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -47,9 +51,8 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
-    "compile": "pnpm build:rollup && webpack --mode production",
-    "build:rollup": "rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript --environment INCLUDE_DEPS,BUILD:production",
-    "watch": "concurrently  \"webpack --mode development --watch\" \"rollup -c rollup.config.ts --configPlugin @rollup/plugin-typescript -w\"",
+    "compile": "rollup -c --configPlugin @rollup/plugin-typescript && webpack --mode production",
+    "watch": "concurrently  \"webpack --mode development --watch\" \"rollup -c --configPlugin @rollup/plugin-typescript -w\"",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test"
