@@ -163,7 +163,7 @@
         loadingMessageSent = true;
         try {
           const { message } = await mutation(`/message`, {
-            recepientId: user.id,
+            recipientId: user.id,
             text,
             conversationId: user.conversationId,
           });
