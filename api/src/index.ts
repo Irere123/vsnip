@@ -1,3 +1,4 @@
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import http from "http";
@@ -15,8 +16,6 @@ import { createTokens, isAuth } from "./auth";
 import { getUserIdOrder } from "./utils";
 import createHttpError from "http-errors";
 import { verify } from "jsonwebtoken";
-
-require("dotenv").config();
 
 (async () => {
   console.log("Running migrations");
@@ -199,9 +198,9 @@ require("dotenv").config();
     end
     , 'created_at', date_part('epoch', m."created_at")*1000)
     from messages m
-    where (m.recepient_id = co."userId1" and m."sender_id" = co."userId2")
+    where (m.recipient_id = co."userId1" and m."sender_id" = co."userId2")
     or
-    (m."sender_id" = co."userId1" and m.recepient_id = co."userId2")
+    (m."sender_id" = co."userId1" and m.recipient_id = co."userId2")
     order by m."created_at" desc limit 1) message
     from conversations co
     inner join "users" u on u.id != ${userId} and (u.id = co."userId1" or u.id = co."userId2")
@@ -263,15 +262,16 @@ require("dotenv").config();
         .where(
           or(
             and(
-              eq(messageEntity.recepientId, userId),
+              eq(messageEntity.recipientId, userId),
               eq(messageEntity.senderId, req.userId)
             ),
             and(
               eq(messageEntity.senderId, userId),
-              eq(messageEntity.recepientId, req.userId)
+              eq(messageEntity.recipientId, req.userId)
             )
           )
         )
+
         .limit(21)
         .orderBy(desc(messageEntity.createdAt));
 
@@ -282,14 +282,27 @@ require("dotenv").config();
     }
   );
 
+  if (!__prod__) {
+    app.post("/dev/user", async (req, res) => {
+      const { email, bio, username, avatar } = req.body;
+
+      const user = await db
+        .insert(userEntity)
+        .values({ username, email, bio, avatar })
+        .returning();
+
+      return res.json(user[0]);
+    });
+  }
+
   app.post("/message", isAuth(), async (req: any, res) => {
-    const { conversationId, recepientId, text } = req.body;
+    const { conversationId, recipientId, text } = req.body;
     const m = await db
       .insert(messageEntity)
-      .values({ conversationId, recepientId, text, senderId: req.userId })
+      .values({ conversationId, recipientId, text, senderId: req.userId })
       .returning();
 
-    wsSend(m[0].recepientId!, { type: "new-message", message: m[0] });
+    wsSend(m[0].recipientId!, { type: "new-message", message: m[0] });
 
     res.json({ message: m[0] });
   });

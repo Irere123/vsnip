@@ -14,6 +14,8 @@
     try {
       const payload: FeedResponse = await query("/feed");
       profiles = payload.profiles;
+
+      console.log("profiles", profiles);
     } catch {}
 
     loadingState = "ready";

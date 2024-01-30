@@ -13,7 +13,7 @@ export const messageEntity = pgTable("messages", {
   senderId: uuid("sender_id").references(() => userEntity.id, {
     onDelete: "cascade",
   }),
-  recepientId: uuid("recepient_id").references(() => userEntity.id, {
+  recipientId: uuid("recipient_id").references(() => userEntity.id, {
     onDelete: "cascade",
   }),
   text: text("text"),

@@ -45,7 +45,7 @@
   function onMessage(newMessage: Message) {
     conversations = conversations
       .map<any>((c) =>
-        c.userId == newMessage.senderId || c.userId == newMessage.recepientId
+        c.userId == newMessage.senderId || c.userId == newMessage.recpientId
           ? {
               ...c,
               message: {

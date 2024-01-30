@@ -1,5 +1,5 @@
 {
-  "id": "c06140ea-2aec-48ff-810f-8013e9374f95",
+  "id": "11607f39-274f-4b23-adc9-b04f36fad957",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "5",
   "dialect": "pg",
@@ -181,8 +181,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "recepient_id": {
-          "name": "recepient_id",
+        "recipient_id": {
+          "name": "recipient_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -231,13 +231,13 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "messages_recepient_id_users_id_fk": {
-          "name": "messages_recepient_id_users_id_fk",
+        "messages_recipient_id_users_id_fk": {
+          "name": "messages_recipient_id_users_id_fk",
           "tableFrom": "messages",
           "tableTo": "users",
           "schemaTo": "public",
           "columnsFrom": [
-            "recepient_id"
+            "recipient_id"
           ],
           "columnsTo": [
             "id"
