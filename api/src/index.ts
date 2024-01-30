@@ -304,6 +304,18 @@ import { verify } from "jsonwebtoken";
 
     wsSend(m[0].recipientId!, { type: "new-message", message: m[0] });
 
+    if (
+      !(m[0].recipientId! in wsUsers) ||
+      wsUsers[m[0].recipientId!].openChatUserId !== req.userId
+    ) {
+      const userIdOrder = getUserIdOrder(req.userId, m[0].recipientId!);
+      await db.update(conversationEntity).set({
+        unfriended: false,
+        ...userIdOrder,
+        [userIdOrder.userId1 === m[0].recipientId ? "read1" : "read2"]: false,
+      });
+    }
+
     res.json({ message: m[0] });
   });
 
