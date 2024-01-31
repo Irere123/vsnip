@@ -52,10 +52,13 @@
   }
 
   function onWebsocketEvent(e: MessageEvent) {
-    const paylaod: WebsocketMessages = JSON.parse(e.data);
+    const payload: WebsocketMessages = JSON.parse(e.data);
 
-    if (paylaod.type == "new-message" && paylaod.message.senderId == user.id) {
-      messages = [paylaod.message, ...messages];
+    if (
+      payload.type === "new-message" &&
+      payload.message.senderId === user.id
+    ) {
+      messages = [payload.message, ...messages];
     }
   }
 
