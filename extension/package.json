@@ -3,6 +3,7 @@
   "displayName": "VS-Snip",
   "publisher": "IrereEmmanuel",
   "description": "Share code with your peers",
+  "icon": "media/icon.png",
   "version": "0.0.5",
   "repository": {
     "type": "git",
