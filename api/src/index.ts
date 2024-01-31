@@ -309,11 +309,14 @@ import { verify } from "jsonwebtoken";
       wsUsers[m[0].recipientId!].openChatUserId !== req.userId
     ) {
       const userIdOrder = getUserIdOrder(req.userId, m[0].recipientId!);
-      await db.update(conversationEntity).set({
-        unfriended: false,
-        ...userIdOrder,
-        [userIdOrder.userId1 === m[0].recipientId ? "read1" : "read2"]: false,
-      });
+      await db
+        .update(conversationEntity)
+        .set({
+          unfriended: false,
+          ...userIdOrder,
+          [userIdOrder.userId1 === m[0].recipientId ? "read1" : "read2"]: false,
+        })
+        .where(eq(conversationEntity.id, conversationId));
     }
 
     res.json({ message: m[0] });
