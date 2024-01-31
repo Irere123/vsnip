@@ -2,9 +2,9 @@
   "name": "vs-snip",
   "displayName": "VS-Snip",
   "publisher": "IrereEmmanuel",
-  "description": "Share code with your peers",
+  "description": "Share with your peers",
   "icon": "media/icon.png",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/Irere123/vsnip"
