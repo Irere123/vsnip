@@ -26,7 +26,7 @@ USER nodejs
 FROM base AS prod-deps
 WORKDIR /app
 USER root
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install
 RUN chown -R nodejs:nodejs /app/node_modules
 USER nodejs
 
