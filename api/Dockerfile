@@ -51,6 +51,7 @@ RUN groupadd --system --gid 1001 nodejs && \
 COPY --from=build /app/dist /app/dist
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=base /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+COPY --from=base /app/drizzle /app/drizzle
 
 RUN chown -R nodejs:nodejs /app
 
