@@ -1,4 +1,4 @@
-export type Page = "login" | "profile-form";
+export type Page = 'login' | 'profile-form';
 
 export type ProfileFormData = {
   username: string;
@@ -7,7 +7,7 @@ export type ProfileFormData = {
 };
 
 export type ConversationState = {
-  page: "conversation";
+  page: 'conversation';
   user?: {
     id: string;
     avatar: string;
@@ -17,12 +17,12 @@ export type ConversationState = {
 };
 
 export type State =
-  | { page: "view-profile" }
-  | { page: "login" }
-  | { page: "loading" }
-  | { page: "profile-form"; data: ProfileFormData }
-  | { page: "explore" }
-  | { page: "messages" }
+  | { page: 'view-profile' }
+  | { page: 'login' }
+  | { page: 'loading' }
+  | { page: 'profile-form'; data: ProfileFormData }
+  | { page: 'explore' }
+  | { page: 'messages' }
   | ConversationState;
 
 export type NavigateFn = (ns: State) => void;
@@ -58,8 +58,8 @@ export interface MessagesResponse {
 }
 
 export type WebsocketMessages =
-  | { type: "new-message"; message: Message }
-  | { type: "unfriend"; userId: string };
+  | { type: 'new-message'; message: Message }
+  | { type: 'unfriend'; userId: string };
 
 export interface Conversation {
   conversationId: string;

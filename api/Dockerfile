@@ -26,14 +26,14 @@ USER nodejs
 FROM base AS prod-deps
 WORKDIR /app
 USER root
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm --filter api install
 RUN chown -R nodejs:nodejs /app/node_modules
 USER nodejs
 
 FROM base AS build
 WORKDIR /app
 USER root
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install && pnpm run build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm --filter api install && pnpm --filter api run build
 RUN chown -R nodejs:nodejs /app/dist
 USER nodejs
 

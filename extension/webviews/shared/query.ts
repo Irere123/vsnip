@@ -2,20 +2,20 @@ export const query = async (path: string) => {
   try {
     const r = await fetch(apiBaseUrl + path, {
       headers: {
-        "access-token": accessToken,
-        "refresh-token": refreshToken,
+        'access-token': accessToken,
+        'refresh-token': refreshToken,
       },
     });
     if (r.status !== 200) {
       throw new Error(await r.text());
     }
-    const _accessToken = r.headers.get("access-token");
-    const _refreshToken = r.headers.get("refresh-token");
+    const _accessToken = r.headers.get('access-token');
+    const _refreshToken = r.headers.get('refresh-token');
     if (_accessToken && _refreshToken) {
       accessToken = _accessToken;
       refreshToken = _refreshToken;
       vscode.postMessage({
-        type: "tokens",
+        type: 'tokens',
         accessToken: _accessToken,
         refreshToken: _refreshToken,
       });
@@ -24,7 +24,7 @@ export const query = async (path: string) => {
     return d;
   } catch (err) {
     vscode.postMessage({
-      type: "onError",
+      type: 'onError',
       value: err.message,
     });
     throw err;

@@ -1,22 +1,19 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import type { ProfileFormData, State, User } from "../shared/types";
-  import Backbar from "../ui/Backbar.svelte";
-  import { query } from "../shared/query";
-  import InputField from "../ui/InputField.svelte";
-  import { mutation } from "../shared/mutation";
+import { onMount } from 'svelte';
+import type { ProfileFormData, State, User } from '../shared/types';
+import { query } from '../shared/query';
 
-  export let data: ProfileFormData;
-  export let onUpdate: () => void;
-  export let onNext: (u: User) => void;
-  export let onNewState: (s: State) => void;
+export let data: ProfileFormData;
+export let onUpdate: () => void;
+export let onNext: (u: User) => void;
+export let onNewState: (s: State) => void;
 
-  onMount(async () => {
-    try {
-      const payload = await query("/conversations/100");
-      console.log(payload);
-    } catch {}
-  });
+onMount(async () => {
+  try {
+    const payload = await query('/conversations/100');
+    console.log(payload);
+  } catch {}
+});
 </script>
 
 <Backbar
@@ -49,7 +46,7 @@
         const { user } = await mutation(
           "/user",
           { email, username },
-          { method: "PUT" }
+          { method: "PUT" },
         );
         console.log(user);
         onNext(user);

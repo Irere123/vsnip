@@ -1,20 +1,19 @@
 <script lang="ts">
-  import type { Profile, FeedResponse } from "../shared/types";
-  import LoadingSpinner from "../ui/LoadingSpinner.svelte";
-  import { query } from "../shared/query";
-  import { onMount } from "svelte";
+import type { Profile, FeedResponse } from '../shared/types';
+import { query } from '../shared/query';
+import { onMount } from 'svelte';
 
-  let loadingState: "init" | "ready" | "more" = "init";
-  let profiles: Profile[];
+let loadingState: 'init' | 'ready' | 'more' = 'init';
+let profiles: Profile[];
 
-  onMount(async () => {
-    try {
-      const payload: FeedResponse = await query("/feed");
-      profiles = payload.profiles;
-    } catch {}
+onMount(async () => {
+  try {
+    const payload: FeedResponse = await query('/feed');
+    profiles = payload.profiles;
+  } catch {}
 
-    loadingState = "ready";
-  });
+  loadingState = 'ready';
+});
 </script>
 
 <main>

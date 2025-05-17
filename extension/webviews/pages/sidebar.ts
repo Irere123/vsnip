@@ -1,4 +1,4 @@
-import Sidebar from "../components/Sidebar.svelte";
+import Sidebar from '../components/Sidebar.svelte';
 
 const sidebar = new Sidebar({
   target: document.body,

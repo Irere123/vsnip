@@ -1,4 +1,8 @@
+packages:
+  - api
+  - extension
 ignoredBuiltDependencies:
   - es5-ext
   - esbuild
+  - svelte-preprocess
   - utf-8-validate

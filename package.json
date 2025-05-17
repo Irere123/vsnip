@@ -1,0 +1,22 @@
+{
+  "name": "vsnip",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:api": "pnpm --filter api dev",
+    "dev:extension": "pnpm --filter vs-snip watch",
+    "build:extension": "pnpm --filter vs-snip build",
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:extension\"",
+    "lint": " biome lint --write .",
+    "format": "biome format --write ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.10.0",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "concurrently": "^8.2.2"
+  }
+}

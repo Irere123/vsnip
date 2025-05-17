@@ -1,89 +1,83 @@
 <script lang="ts">
-  import { query } from "../shared/query";
-  import type {
-    Conversation,
-    ConversationState,
-    ConversationsResponse,
-    Message,
-    State,
-    User,
-    WebsocketMessages,
-  } from "../shared/types";
-  import Backbar from "../ui/Backbar.svelte";
-  import Button from "../ui/Button.svelte";
-  import LoadingSpinner from "../ui/LoadingSpinner.svelte";
-  import Messages from "./Messages.svelte";
-  import DoOnMount from "../components/DoOnMount.svelte";
-  import { onDestroy, onMount } from "svelte";
-  import ConversationCard from "../ui/ConversationCard.svelte";
-  import { getSocket } from "../shared/io";
+import { query } from '../shared/query';
+import type {
+  Conversation,
+  ConversationState,
+  ConversationsResponse,
+  Message,
+  State,
+  User,
+  WebsocketMessages,
+} from '../shared/types';
+import { onDestroy, onMount } from 'svelte';
+import { getSocket } from '../shared/io';
 
-  export let currentUserIsLoading: boolean;
-  export let currentUser: User | null;
-  export let state: ConversationState;
-  export let onNewState: (s: State) => void;
-  let cursor = 0;
-  let loading = true;
-  let conversations: Conversation[] = [];
+export let currentUserIsLoading: boolean;
+export let currentUser: User | null;
+export let state: ConversationState;
+export let onNewState: (s: State) => void;
+const cursor = 0;
+let loading = true;
+let conversations: Conversation[] = [];
 
-  $: isInConversations = conversations.some(
-    (c) => state.user && c.userId === state.user.id
-  );
+$: isInConversations = conversations.some(
+  (c) => state.user && c.userId === state.user.id,
+);
 
-  function compareConversations(a: Conversation, b: Conversation) {
-    const v1 = a.message?.createdAt || a.createdAt;
-    const v2 = b.message?.createdAt || b.createdAt;
-    if (v1 > v2) {
-      return -1;
-    }
-    if (v1 < v2) {
-      return 1;
-    }
-    return 0;
+function compareConversations(a: Conversation, b: Conversation) {
+  const v1 = a.message?.createdAt || a.createdAt;
+  const v2 = b.message?.createdAt || b.createdAt;
+  if (v1 > v2) {
+    return -1;
   }
-
-  function onMessage(newMessage: Message) {
-    conversations = conversations
-      .map<any>((c) =>
-        c.userId == newMessage.senderId || c.userId == newMessage.recpientId
-          ? {
-              ...c,
-              message: {
-                text: newMessage.text,
-                createdAt: newMessage.createdAt,
-              },
-            }
-          : c
-      )
-      .sort(compareConversations);
+  if (v1 < v2) {
+    return 1;
   }
+  return 0;
+}
 
-  async function fetchMatches() {
-    loading = true;
-    try {
-      const r: ConversationsResponse = await query("/conversations/" + cursor);
-      conversations = r.conversations.sort(compareConversations);
-    } catch {}
+function onMessage(newMessage: Message) {
+  conversations = conversations
+    .map<any>((c) =>
+      c.userId === newMessage.senderId || c.userId === newMessage.recipientId
+        ? {
+            ...c,
+            message: {
+              text: newMessage.text,
+              createdAt: newMessage.createdAt,
+            },
+          }
+        : c,
+    )
+    .sort(compareConversations);
+}
 
-    loading = false;
+async function fetchMatches() {
+  loading = true;
+  try {
+    const r: ConversationsResponse = await query(`/conversations/${cursor}`);
+    conversations = r.conversations.sort(compareConversations);
+  } catch {}
+
+  loading = false;
+}
+
+function onWebSocketEvent(e: MessageEvent) {
+  const payload: WebsocketMessages = e.data;
+
+  if (payload.type === 'new-message') {
+    onMessage(payload.message);
   }
+}
 
-  function onWebSocketEvent(e: MessageEvent) {
-    const payload: WebsocketMessages = e.data;
+onMount(async () => {
+  await fetchMatches();
+  getSocket().addEventListener('message', onWebSocketEvent);
+});
 
-    if (payload.type === "new-message") {
-      onMessage(payload.message);
-    }
-  }
-
-  onMount(async () => {
-    await fetchMatches();
-    getSocket().addEventListener("message", onWebSocketEvent);
-  });
-
-  onDestroy(() => {
-    getSocket().removeEventListener("message", onWebSocketEvent);
-  });
+onDestroy(() => {
+  getSocket().removeEventListener('message', onWebSocketEvent);
+});
 </script>
 
 <Backbar

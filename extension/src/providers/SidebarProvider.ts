@@ -1,14 +1,14 @@
-import * as vscode from "vscode";
-import { getNonce } from "../getNonce";
-import { Store } from "../Store";
-import { accessTokenKey, apiBaseUrl, refreshTokenKey } from "../constants";
-import { authenticate } from "../authenticate";
-import { ExplorePanel } from "./ExplorePanel";
+import * as vscode from 'vscode';
+import { getNonce } from '../getNonce';
+import { Store } from '../Store';
+import { accessTokenKey, apiBaseUrl, refreshTokenKey } from '../constants';
+import { authenticate } from '../authenticate';
+import { ExplorePanel } from './ExplorePanel';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
   _view?: vscode.WebviewView;
   _doc?: vscode.TextDocument;
-  public static readonly viewType = "snip-sidebar";
+  public static readonly viewType = 'snip-sidebar';
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -26,23 +26,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
-        case "logout": {
-          await Store.globalState.update(accessTokenKey, "");
-          await Store.globalState.update(refreshTokenKey, "");
+        case 'logout': {
+          await Store.globalState.update(accessTokenKey, '');
+          await Store.globalState.update(refreshTokenKey, '');
           break;
         }
-        case "login": {
+        case 'login': {
           authenticate((payload) => {
             webviewView.webview.postMessage({
-              command: "login-complete",
+              command: 'login-complete',
               payload,
             });
           });
           break;
         }
-        case "send-tokens": {
+        case 'send-tokens': {
           webviewView.webview.postMessage({
-            command: "init-tokens",
+            command: 'init-tokens',
             payload: {
               accessToken: Store.getAccessToken(),
               refreshToken: Store.getRefreshToken(),
@@ -50,25 +50,25 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           });
           break;
         }
-        case "explore": {
+        case 'explore': {
           ExplorePanel.createOrShow(this._extensionUri);
           break;
         }
-        case "onInfo": {
+        case 'onInfo': {
           if (!data.value) {
             return;
           }
           vscode.window.showInformationMessage(data.value);
           break;
         }
-        case "onError": {
+        case 'onError': {
           if (!data.value) {
             return;
           }
           vscode.window.showErrorMessage(data.value);
           break;
         }
-        case "tokens": {
+        case 'tokens': {
           await Store.globalState.update(accessTokenKey, data.accessToken);
           await Store.globalState.update(refreshTokenKey, data.refreshToken);
           break;
@@ -83,16 +83,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
   private _getHtmlForWebview(webview: vscode.Webview) {
     const styleResetUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "media", "reset.css")
+      vscode.Uri.joinPath(this._extensionUri, 'media', 'reset.css'),
     );
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.js")
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'compiled/sidebar.js'),
     );
     const styleMainUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "out", "compiled/sidebar.css")
+      vscode.Uri.joinPath(this._extensionUri, 'out', 'compiled/sidebar.css'),
     );
     const styleVSCodeUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "media", "vscode.css")
+      vscode.Uri.joinPath(this._extensionUri, 'media', 'vscode.css'),
     );
 
     // Use a nonce to only allow a specific script to be run.
@@ -107,12 +107,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 					and only allow scripts that have a specific nonce.
         -->
         <meta http-equiv="Content-Security-Policy" content="default-src ${
-          apiBaseUrl.includes("https")
-            ? apiBaseUrl.replace("https", "wss")
-            : apiBaseUrl.replace("http", "ws")
+          apiBaseUrl.includes('https')
+            ? apiBaseUrl.replace('https', 'wss')
+            : apiBaseUrl.replace('http', 'ws')
         } ${apiBaseUrl} https://x9lecdo5aj.execute-api.us-east-1.amazonaws.com; img-src https: data:; style-src 'unsafe-inline' ${
-      webview.cspSource
-    }; script-src 'nonce-${nonce}';">
+          webview.cspSource
+        }; script-src 'nonce-${nonce}';">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<link href="${styleResetUri}" rel="stylesheet">
 				<link href="${styleVSCodeUri}" rel="stylesheet">

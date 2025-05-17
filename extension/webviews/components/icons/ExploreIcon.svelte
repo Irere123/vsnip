@@ -1,6 +1,6 @@
 <script lang="ts">
-  export let width: number = 24;
-  export let height: number = 24;
+export const width = 24;
+export const height = 24;
 </script>
 
 <button on:click>

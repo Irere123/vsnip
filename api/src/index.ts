@@ -1,27 +1,28 @@
-import "dotenv/config";
-import cors from "cors";
-import express from "express";
-import http from "http";
-import passport from "passport";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { and, desc, eq, or, sql } from "drizzle-orm";
-import WebSocket, { Server } from "ws";
-import url from "url";
+import 'dotenv/config';
+import cors from 'cors';
+import express from 'express';
+import http from 'http';
+import passport from 'passport';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { and, desc, eq, or, sql } from 'drizzle-orm';
+import type WebSocket from 'ws';
+import { Server } from 'ws';
+import url from 'url';
 
-import { db } from "./db";
-import { conversationEntity, messageEntity, userEntity } from "./schema";
-import { __prod__ } from "./constants";
-import { createTokens, isAuth } from "./auth";
-import { getUserIdOrder } from "./utils";
-import createHttpError from "http-errors";
-import { verify } from "jsonwebtoken";
+import { db } from './db';
+import { conversationEntity, messageEntity, userEntity } from './schema';
+import { __prod__ } from './constants';
+import { createTokens, isAuth } from './auth';
+import { getUserIdOrder } from './utils';
+import createHttpError from 'http-errors';
+import { verify } from 'jsonwebtoken';
 
 (async () => {
-  console.log("Running migrations");
+  console.log('Running migrations');
 
-  await migrate(db, { migrationsFolder: "drizzle" });
-  console.log("Migrated successfully");
+  await migrate(db, { migrationsFolder: 'drizzle' });
+  console.log('Migrated successfully');
 
   const wsUsers: Record<
     string,
@@ -40,7 +41,7 @@ import { verify } from "jsonwebtoken";
         clientID: process.env.GOOGLE_OAUTH_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
         callbackURL: `${process.env.SERVER_URL}/auth/google/callback`,
-        scope: ["profile", "email"],
+        scope: ['profile', 'email'],
       },
       async (_accessToken, _refreshToken, profile, cb) => {
         try {
@@ -76,10 +77,10 @@ import { verify } from "jsonwebtoken";
           cb(null, createTokens(users[0]));
         } catch (err) {
           console.log(err);
-          cb(new Error("Internal server error"));
+          cb(new Error('Internal server error'));
         }
-      }
-    )
+      },
+    ),
   );
 
   passport.serializeUser((user: any, done) => {
@@ -88,35 +89,35 @@ import { verify } from "jsonwebtoken";
 
   const app = express();
 
-  app.set("trust proxy", 1);
+  app.set('trust proxy', 1);
 
   app.use(
     cors({
-      origin: "*",
+      origin: '*',
       maxAge: __prod__ ? 86400 : undefined,
       exposedHeaders: [
-        "access-token",
-        "refresh-token",
-        "content-type",
-        "content-length",
+        'access-token',
+        'refresh-token',
+        'content-type',
+        'content-length',
       ],
-    })
+    }),
   );
 
   app.use(express.json());
   app.use(passport.initialize());
 
-  app.get("/auth/google", (req, res, next) => {
-    const state = Buffer.from(JSON.stringify({ rn: false })).toString("base64");
-    passport.authenticate("google", {
+  app.get('/auth/google', (req, res, next) => {
+    const state = Buffer.from(JSON.stringify({ rn: false })).toString('base64');
+    passport.authenticate('google', {
       session: false,
       state,
     })(req, res, next);
   });
 
   app.get(
-    "/auth/google/callback",
-    passport.authenticate("google", { session: false }),
+    '/auth/google/callback',
+    passport.authenticate('google', { session: false }),
     (req: any, res) => {
       if (!req.user.accessToken || !req.user.refreshToken) {
         res.send(`something went wrong`);
@@ -124,16 +125,16 @@ import { verify } from "jsonwebtoken";
       }
 
       const { state } = req.query;
-      const { rn, rn2 } = JSON.parse(Buffer.from(state, "base64").toString());
+      const { rn, rn2 } = JSON.parse(Buffer.from(state, 'base64').toString());
       if (rn2) {
         res.redirect(
           `${
             __prod__
               ? `vsnip://`
               : `exp:${
-                  process.env.SERVER_URL!.replace("http:", "").split(":")[0]
+                  process.env.SERVER_URL!.replace('http:', '').split(':')[0]
                 }:19000/--/`
-          }tokens2/${req.user.accessToken}/${req.user.refreshToken}`
+          }tokens2/${req.user.accessToken}/${req.user.refreshToken}`,
         );
       } else if (rn) {
         res.redirect(
@@ -141,19 +142,19 @@ import { verify } from "jsonwebtoken";
             __prod__
               ? `vsnip://`
               : `exp:${
-                  process.env.SERVER_URL!.replace("http:", "").split(":")[0]
+                  process.env.SERVER_URL!.replace('http:', '').split(':')[0]
                 }:19000/--/`
-          }tokens/${req.user.accessToken}/${req.user.refreshToken}`
+          }tokens/${req.user.accessToken}/${req.user.refreshToken}`,
         );
       } else {
         res.redirect(
-          `http://localhost:54321/callback/${req.user.accessToken}/${req.user.refreshToken}`
+          `http://localhost:54321/callback/${req.user.accessToken}/${req.user.refreshToken}`,
         );
       }
-    }
+    },
   );
 
-  app.get("/me", isAuth(false), async (req: any, res) => {
+  app.get('/me', isAuth(false), async (req: any, res) => {
     if (!req.userId) {
       res.json({
         user: null,
@@ -170,17 +171,17 @@ import { verify } from "jsonwebtoken";
     });
   });
 
-  app.get("/feed", isAuth(), async (req: any, res) => {
+  app.get('/feed', isAuth(), async (req: any, res) => {
     const userId = req.userId;
 
     const users = await db.execute(
-      sql`select * from users where id != ${userId}`
+      sql`select * from users where id != ${userId}`,
     );
 
     return res.json({ profiles: users.rows });
   });
 
-  app.get("/conversations/:cursor", isAuth(), async (req: any, res) => {
+  app.get('/conversations/:cursor', isAuth(), async (req: any, res) => {
     const userId = req.userId;
 
     const conv = await db.execute(sql`
@@ -210,7 +211,7 @@ import { verify } from "jsonwebtoken";
     res.json({ conversations: conv.rows });
   });
 
-  app.post("/conversation", isAuth(), async (req: any, res) => {
+  app.post('/conversation', isAuth(), async (req: any, res) => {
     const { userId } = req.body;
 
     const already_exists = await db
@@ -220,13 +221,13 @@ import { verify } from "jsonwebtoken";
         or(
           and(
             eq(conversationEntity.userId1, userId),
-            eq(conversationEntity.userId2, req.userId)
+            eq(conversationEntity.userId2, req.userId),
           ),
           and(
             eq(conversationEntity.userId1, req.userId),
-            eq(conversationEntity.userId2, userId)
-          )
-        )
+            eq(conversationEntity.userId2, userId),
+          ),
+        ),
       );
 
     if (already_exists[0]) {
@@ -242,12 +243,12 @@ import { verify } from "jsonwebtoken";
   });
 
   app.get(
-    "/messages/:userId/:cursor?",
+    '/messages/:userId/:cursor?',
     isAuth(),
     async (req: any, res, next) => {
       try {
         req.params.cursor = req.params.cursor
-          ? parseInt(req.params.cursor)
+          ? Number.parseInt(req.params.cursor)
           : undefined;
       } catch (err) {
         next(createHttpError(400, err.message));
@@ -263,13 +264,13 @@ import { verify } from "jsonwebtoken";
           or(
             and(
               eq(messageEntity.recipientId, userId),
-              eq(messageEntity.senderId, req.userId)
+              eq(messageEntity.senderId, req.userId),
             ),
             and(
               eq(messageEntity.senderId, userId),
-              eq(messageEntity.recipientId, req.userId)
-            )
-          )
+              eq(messageEntity.recipientId, req.userId),
+            ),
+          ),
         )
 
         .limit(21)
@@ -279,11 +280,11 @@ import { verify } from "jsonwebtoken";
         messages: messages.slice(0, 20),
         hasMore: messages.length === 21,
       });
-    }
+    },
   );
 
   if (!__prod__) {
-    app.post("/dev/user", async (req, res) => {
+    app.post('/dev/user', async (req, res) => {
       const { email, bio, username, avatar } = req.body;
 
       const user = await db
@@ -295,14 +296,14 @@ import { verify } from "jsonwebtoken";
     });
   }
 
-  app.post("/message", isAuth(), async (req: any, res) => {
+  app.post('/message', isAuth(), async (req: any, res) => {
     const { conversationId, recipientId, text } = req.body;
     const m = await db
       .insert(messageEntity)
       .values({ conversationId, recipientId, text, senderId: req.userId })
       .returning();
 
-    wsSend(m[0].recipientId!, { type: "new-message", message: m[0] });
+    wsSend(m[0].recipientId!, { type: 'new-message', message: m[0] });
 
     if (
       !(m[0].recipientId! in wsUsers) ||
@@ -314,7 +315,7 @@ import { verify } from "jsonwebtoken";
         .set({
           unfriended: false,
           ...userIdOrder,
-          [userIdOrder.userId1 === m[0].recipientId ? "read1" : "read2"]: false,
+          [userIdOrder.userId1 === m[0].recipientId ? 'read1' : 'read2']: false,
         })
         .where(eq(conversationEntity.id, conversationId));
     }
@@ -322,11 +323,11 @@ import { verify } from "jsonwebtoken";
     res.json({ message: m[0] });
   });
 
-  app.put("/user", isAuth(), async (req: any, res) => {
+  app.put('/user', isAuth(), async (req: any, res) => {
     const { email, username } = req.body;
 
     if (!email || !username) {
-      return createHttpError(400, "Not authorized");
+      return createHttpError(400, 'Not authorized');
     }
 
     const user = await db
@@ -340,40 +341,40 @@ import { verify } from "jsonwebtoken";
   const server = http.createServer(app);
   const wss = new Server({ noServer: true });
 
-  wss.on("connection", (ws: WebSocket, userId: string) => {
+  wss.on('connection', (ws: WebSocket, userId: string) => {
     if (!userId) {
       ws.terminate();
     }
 
     wsUsers[userId] = { openChatUserId: null, ws };
 
-    ws.on("message", (e: any) => {
+    ws.on('message', (e: any) => {
       const {
         type,
         userId: openChatUserId,
-      }: { type: "message-open"; userId: string } = JSON.parse(e);
+      }: { type: 'message-open'; userId: string } = JSON.parse(e);
 
-      if (type === "message-open") {
+      if (type === 'message-open') {
         if (userId in wsUsers) {
           wsUsers[userId].openChatUserId = openChatUserId;
         }
       }
     });
 
-    ws.on("close", () => {
+    ws.on('close', () => {
       delete wsUsers[userId];
     });
   });
 
-  server.on("upgrade", async function upgrade(request, socket, head) {
+  server.on('upgrade', async function upgrade(request, socket, head) {
     const good = (userId: string) => {
       wss.handleUpgrade(request, socket, head, function done(ws) {
-        wss.emit("connection", ws, userId);
+        wss.emit('connection', ws, userId);
       });
     };
 
     const bad = () => {
-      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
       socket.destroy();
     };
 
@@ -385,8 +386,8 @@ import { verify } from "jsonwebtoken";
       if (
         !accessToken ||
         !refreshToken ||
-        typeof accessToken !== "string" ||
-        typeof refreshToken !== "string"
+        typeof accessToken !== 'string' ||
+        typeof refreshToken !== 'string'
       ) {
         return bad();
       }
@@ -394,7 +395,7 @@ import { verify } from "jsonwebtoken";
       try {
         const data = verify(
           accessToken,
-          process.env.ACCESS_TOKEN_SECRET!
+          process.env.ACCESS_TOKEN_SECRET!,
         ) as any;
 
         return good(data.userId);
@@ -403,7 +404,7 @@ import { verify } from "jsonwebtoken";
       try {
         const data = verify(
           refreshToken,
-          process.env.REFRESH_TOKEN_SECRET as string
+          process.env.REFRESH_TOKEN_SECRET as string,
         ) as any;
         const user = await db
           .select()
@@ -419,7 +420,10 @@ import { verify } from "jsonwebtoken";
     } catch {}
   });
 
-  server.listen(process.env.PORT ? parseInt(process.env.PORT) : 4000, () => {
-    console.log("Server started");
-  });
+  server.listen(
+    process.env.PORT ? Number.parseInt(process.env.PORT) : 4000,
+    () => {
+      console.log('Server started');
+    },
+  );
 })();

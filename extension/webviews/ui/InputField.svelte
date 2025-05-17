@@ -1,16 +1,14 @@
 <script lang="ts">
-  import Labeler from "./Labeler.svelte";
+export let name: string;
+export const label = '';
+export const value = '';
+export let min: number | undefined;
+export let max: number | undefined;
+export const type: string | undefined = 'text';
+export const placeholder = '';
+export const required = false;
 
-  export let name: string;
-  export let label: string = "";
-  export let value: string = "";
-  export let min: number | undefined;
-  export let max: number | undefined;
-  export let type: string | undefined = "text";
-  export let placeholder: string = "";
-  export let required: boolean = false;
-
-  export let textArea: boolean | undefined | null = false;
+export const textArea: boolean | undefined | null = false;
 </script>
 
 <Labeler {name} {label}>

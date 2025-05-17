@@ -131,12 +131,8 @@
           "tableFrom": "conversations",
           "tableTo": "users",
           "schemaTo": "public",
-          "columnsFrom": [
-            "userId1"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId1"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -145,12 +141,8 @@
           "tableFrom": "conversations",
           "tableTo": "users",
           "schemaTo": "public",
-          "columnsFrom": [
-            "userId2"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId2"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -208,12 +200,8 @@
           "tableFrom": "messages",
           "tableTo": "conversations",
           "schemaTo": "public",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -222,12 +210,8 @@
           "tableFrom": "messages",
           "tableTo": "users",
           "schemaTo": "public",
-          "columnsFrom": [
-            "sender_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["sender_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -236,12 +220,8 @@
           "tableFrom": "messages",
           "tableTo": "users",
           "schemaTo": "public",
-          "columnsFrom": [
-            "recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

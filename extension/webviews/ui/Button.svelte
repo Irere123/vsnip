@@ -1,7 +1,7 @@
 <script lang="ts">
-  export let disabled = false;
-  export let type: "button" | "reset" | "submit" = "button";
-  export let className = "";
+export const disabled = false;
+export const type: 'button' | 'reset' | 'submit' = 'button';
+export const className = '';
 </script>
 
 <button class={className} {type} {disabled} on:click>

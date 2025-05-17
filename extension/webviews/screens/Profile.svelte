@@ -1,14 +1,12 @@
 <script lang="ts">
-  import ExploreIcon from "../components/icons/ExploreIcon.svelte";
-  import type { User } from "../shared/types";
-  import LoadingSpinner from "../ui/LoadingSpinner.svelte";
+import type { User } from '../shared/types';
 
-  export let currentUser: User | null;
-  export let currentUserIsLoading: boolean;
-  export let onEditProfile: () => void;
-  export let onViewMessages: () => void;
-  export let onLogout: () => void;
-  export let onExplore: () => void;
+export let currentUser: User | null;
+export let currentUserIsLoading: boolean;
+export let onEditProfile: () => void;
+export let onViewMessages: () => void;
+export let onLogout: () => void;
+export let onExplore: () => void;
 </script>
 
 {#if currentUserIsLoading}

@@ -1,13 +1,13 @@
-import svelte from "rollup-plugin-svelte";
-import resolve from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import terser from "@rollup/plugin-terser";
-import sveltePreprocess from "svelte-preprocess";
-import typescript from "@rollup/plugin-typescript";
-import postcss from "rollup-plugin-postcss";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
+import svelte from 'rollup-plugin-svelte';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import terser from '@rollup/plugin-terser';
+import sveltePreprocess from 'svelte-preprocess';
+import typescript from '@rollup/plugin-typescript';
+import postcss from 'rollup-plugin-postcss';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -16,16 +16,16 @@ const __dirname = path.dirname(__filename);
 const production = !process.env.ROLLUP_WATCH;
 
 export default fs
-  .readdirSync(path.join(__dirname, "webviews", "pages"))
+  .readdirSync(path.join(__dirname, 'webviews', 'pages'))
   .map((input) => {
-    const name = input.split(".")[0];
+    const name = input.split('.')[0];
     return {
-      input: "webviews/pages/" + input,
+      input: 'webviews/pages/' + input,
       output: {
         sourcemap: true,
-        format: "iife",
-        name: "app",
-        file: "out/compiled/" + name + ".js",
+        format: 'iife',
+        name: 'app',
+        file: 'out/compiled/' + name + '.js',
       },
       plugins: [
         // css(),
@@ -33,8 +33,8 @@ export default fs
         svelte({
           compilerOptions: {
             dev: !production, // enable run-time checks when not in production
-            css: "external",
-            cssOutputFilename: name + ".css",
+            css: 'external',
+            cssOutputFilename: name + '.css',
             cssHash: undefined,
           },
           emitCss: true,
@@ -48,11 +48,11 @@ export default fs
         // https://github.com/rollup/plugins/tree/master/packages/commonjs
         resolve({
           browser: true,
-          dedupe: ["svelte"],
+          dedupe: ['svelte'],
         }),
         commonjs(),
         typescript({
-          tsconfig: "webviews/tsconfig.json",
+          tsconfig: 'webviews/tsconfig.json',
           sourceMap: !production,
           inlineSources: !production,
         }),

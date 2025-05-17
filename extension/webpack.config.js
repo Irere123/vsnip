@@ -1,6 +1,4 @@
-//@ts-check
 
-"use strict";
 
 const path = require("path");
 

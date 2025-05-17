@@ -1,106 +1,100 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import { query } from "../shared/query";
-  import type {
-    ConversationState,
-    MessagesResponse,
-    Message,
-    WebsocketMessages,
-  } from "../shared/types";
-  import LoadingSpinner from "../ui/LoadingSpinner.svelte";
-  import { getSocket } from "../shared/io";
-  import { mutation } from "../shared/mutation";
-  import MessageGroups from "../components/MessageGroups.svelte";
+import { onDestroy, onMount } from 'svelte';
+import { query } from '../shared/query';
+import type {
+  ConversationState,
+  MessagesResponse,
+  Message,
+  WebsocketMessages,
+} from '../shared/types';
+import { getSocket } from '../shared/io';
 
-  export let user: NonNullable<ConversationState["user"]>;
-  export let myId: string;
-  export let onMessage: (m: Message) => void;
-  export let onUnmatch: (x: string) => void;
-  let loadingMessageSent = false;
-  let loading = true;
-  let isLoadingMore = false;
-  let unfriended = false;
-  let hasMore = false;
-  let messages: Message[] = [];
-  let text = "";
-  let messageGroups: Message[][] = [];
+export let user: NonNullable<ConversationState['user']>;
+export let myId: string;
+export let onMessage: (m: Message) => void;
+export let onUnmatch: (x: string) => void;
+const loadingMessageSent = false;
+let loading = true;
+const isLoadingMore = false;
+const unfriended = false;
+let hasMore = false;
+let messages: Message[] = [];
+const text = '';
+let messageGroups: Message[][] = [];
 
-  $: {
-    let newMessagesGroups: Message[][] = [];
+$: {
+  const newMessagesGroups: Message[][] = [];
 
-    messages.forEach((m) => {
-      if (!newMessagesGroups[0]) {
-        newMessagesGroups.push([m]);
-        return;
-      }
+  messages.forEach((m) => {
+    if (!newMessagesGroups[0]) {
+      newMessagesGroups.push([m]);
+      return;
+    }
 
-      const lastGroup = newMessagesGroups[newMessagesGroups.length - 1];
-      const lastMessage = lastGroup[lastGroup.length - 1];
-
-      if (
-        lastMessage.createdAt - m.createdAt > 120000 ||
-        m.senderId !== lastMessage.senderId
-      ) {
-        newMessagesGroups.push([m]);
-        return;
-      }
-
-      newMessagesGroups[newMessagesGroups.length - 1].push(m);
-    });
-
-    messageGroups = newMessagesGroups;
-  }
-
-  function onWebsocketEvent(e: MessageEvent) {
-    const payload: WebsocketMessages = JSON.parse(e.data);
+    const lastGroup = newMessagesGroups[newMessagesGroups.length - 1];
+    const lastMessage = lastGroup[lastGroup.length - 1];
 
     if (
-      payload.type === "new-message" &&
-      payload.message.senderId === user.id
+      lastMessage.createdAt - m.createdAt > 120000 ||
+      m.senderId !== lastMessage.senderId
     ) {
-      messages = [payload.message, ...messages];
+      newMessagesGroups.push([m]);
+      return;
     }
-  }
 
-  async function fetchMessages() {
-    const payload: MessagesResponse = await query(
-      `/messages/${user.id}/${
-        messages.length ? messages[messages.length - 1].createdAt : ""
-      }`
-    );
-    messages = [
-      ...messages,
-      ...payload.messages.sort((a, b) => {
-        if (a.createdAt > b.createdAt) {
-          return -1;
-        }
-        if (a.createdAt < b.createdAt) {
-          return 1;
-        }
-        return 0;
-      }),
-    ];
-    hasMore = payload.hasMore;
-  }
-
-  onMount(async () => {
-    try {
-      const socket = getSocket();
-      socket.addEventListener("message", onWebsocketEvent);
-    } catch (err) {
-      console.log(err);
-    }
-    try {
-      await fetchMessages();
-    } catch {}
-    loading = false;
+    newMessagesGroups[newMessagesGroups.length - 1].push(m);
   });
 
-  onDestroy(() => {
+  messageGroups = newMessagesGroups;
+}
+
+function onWebsocketEvent(e: MessageEvent) {
+  const payload: WebsocketMessages = JSON.parse(e.data);
+
+  if (payload.type === 'new-message' && payload.message.senderId === user.id) {
+    messages = [payload.message, ...messages];
+  }
+}
+
+async function fetchMessages() {
+  const payload: MessagesResponse = await query(
+    `/messages/${user.id}/${
+      messages.length ? messages[messages.length - 1].createdAt : ''
+    }`,
+  );
+  messages = [
+    ...messages,
+    ...payload.messages.sort((a, b) => {
+      if (a.createdAt > b.createdAt) {
+        return -1;
+      }
+      if (a.createdAt < b.createdAt) {
+        return 1;
+      }
+      return 0;
+    }),
+  ];
+  hasMore = payload.hasMore;
+}
+
+onMount(async () => {
+  try {
     const socket = getSocket();
-    socket.send(JSON.stringify({ type: "message-open", userId: null }));
-    socket.removeEventListener("message", onWebsocketEvent);
-  });
+    socket.addEventListener('message', onWebsocketEvent);
+  } catch (err) {
+    console.log(err);
+  }
+  try {
+    await fetchMessages();
+  } catch {}
+  loading = false;
+});
+
+onDestroy(() => {
+  const socket = getSocket();
+  socket.send(JSON.stringify({ type: 'message-open', userId: null }));
+  socket.removeEventListener('message', onWebsocketEvent);
+});
 </script>
 
 {#if unfriended}

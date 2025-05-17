@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Conversation } from "../shared/types";
+import type { Conversation } from '../shared/types';
 
-  export let conversation: Conversation;
+export let conversation: Conversation;
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->

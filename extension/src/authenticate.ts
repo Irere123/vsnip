@@ -1,30 +1,30 @@
-import koa from "koa";
-import Router from "@koa/router";
-import * as vscode from "vscode";
-import { accessTokenKey, apiBaseUrl, refreshTokenKey } from "./constants";
-import { Store } from "./Store";
+import koa from 'koa';
+import Router from '@koa/router';
+import * as vscode from 'vscode';
+import { accessTokenKey, apiBaseUrl, refreshTokenKey } from './constants';
+import { Store } from './Store';
 
 export const authenticate = (
-  fn: (x: { accessToken: string; refreshToken: string }) => void
+  fn: (x: { accessToken: string; refreshToken: string }) => void,
 ) => {
   const app = new koa();
 
   vscode.commands.executeCommand(
-    "vscode.open",
-    vscode.Uri.parse(`${apiBaseUrl}/auth/google`)
+    'vscode.open',
+    vscode.Uri.parse(`${apiBaseUrl}/auth/google`),
   );
 
   const router = new Router();
 
-  router.get("/", (ctx) => {
-    ctx.response.body = "Hello world";
+  router.get('/', (ctx) => {
+    ctx.response.body = 'Hello world';
   });
 
-  router.get("/callback/:accessToken/:refreshToken", async (ctx) => {
+  router.get('/callback/:accessToken/:refreshToken', async (ctx) => {
     const { accessToken, refreshToken } = ctx.params;
 
     if (!accessToken || !refreshToken) {
-      ctx.response.body = "Something went wrong";
+      ctx.response.body = 'Something went wrong';
       return;
     }
 

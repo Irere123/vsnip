@@ -1,6 +1,6 @@
 <script lang="ts">
-  export let name: string;
-  export let label: string;
+export let name: string;
+export let label: string;
 </script>
 
 {#if label}

@@ -1,7 +1,5 @@
 <script lang="ts">
-  import Button from "./Button.svelte";
-
-  export let onBack: () => void;
+export let onBack: () => void;
 </script>
 
 <div>

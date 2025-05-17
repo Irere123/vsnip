@@ -1,20 +1,18 @@
 <script lang="ts">
-  import type { Message } from "../shared/types";
-  import { dtStr } from "../shared/utils";
-  import Avatar from "../ui/Avatar.svelte";
+import type { Message } from '../shared/types';
 
-  export let userInfo: {
-    id: string;
-    username: string;
-    avatar: string;
-  };
-  export let myId: string;
-  export let photoUrl: string;
-  export let mg: Message[];
-  export let i: number;
+export let userInfo: {
+  id: string;
+  username: string;
+  avatar: string;
+};
+export let myId: string;
+export let photoUrl: string;
+export let mg: Message[];
+export let i: number;
 
-  $: lastMessage = mg[mg.length - 1];
-  $: isSender = lastMessage.senderId === myId;
+$: lastMessage = mg[mg.length - 1];
+$: isSender = lastMessage.senderId === myId;
 </script>
 
 <div class="message-group" class:mb={i === 0}>

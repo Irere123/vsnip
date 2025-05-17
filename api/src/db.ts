@@ -1,8 +1,8 @@
-import { Pool } from "pg";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 
-import * as schema from "./schema";
-import { __prod__ } from "./constants";
+import * as schema from './schema';
+import { __prod__ } from './constants';
 
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL as string,
