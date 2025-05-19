@@ -4,3 +4,4 @@ export const apiBaseUrl = _prod_
   : 'http://localhost:4000';
 export const accessTokenKey = `@vsnip/token${_prod_ ? '' : 'dev'}`;
 export const refreshTokenKey = `@vsnip/refresh-token${_prod_ ? '' : 'dev'}`;
+export const activeContextKey = 'vsnip-active';

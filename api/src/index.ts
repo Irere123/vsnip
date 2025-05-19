@@ -128,22 +128,18 @@ import { verify } from 'jsonwebtoken';
       const { rn, rn2 } = JSON.parse(Buffer.from(state, 'base64').toString());
       if (rn2) {
         res.redirect(
-          `${
-            __prod__
-              ? `vsnip://`
-              : `exp:${
-                  process.env.SERVER_URL!.replace('http:', '').split(':')[0]
-                }:19000/--/`
+          `${__prod__
+            ? `vsnip://`
+            : `exp:${process.env.SERVER_URL!.replace('http:', '').split(':')[0]
+            }:19000/--/`
           }tokens2/${req.user.accessToken}/${req.user.refreshToken}`,
         );
       } else if (rn) {
         res.redirect(
-          `${
-            __prod__
-              ? `vsnip://`
-              : `exp:${
-                  process.env.SERVER_URL!.replace('http:', '').split(':')[0]
-                }:19000/--/`
+          `${__prod__
+            ? `vsnip://`
+            : `exp:${process.env.SERVER_URL!.replace('http:', '').split(':')[0]
+            }:19000/--/`
           }tokens/${req.user.accessToken}/${req.user.refreshToken}`,
         );
       } else {
@@ -338,6 +334,22 @@ import { verify } from 'jsonwebtoken';
     return res.json({ user });
   });
 
+  app.get('/user/:id', isAuth(), async (req: any, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+      return createHttpError(402, 'You must provide the ID');
+    }
+
+    const user = await db
+      .select()
+      .from(userEntity)
+      .where(eq(userEntity.id, id));
+
+    return res.json(user);
+  });
+
+
   const server = http.createServer(app);
   const wss = new Server({ noServer: true });
 
@@ -399,7 +411,7 @@ import { verify } from 'jsonwebtoken';
         ) as any;
 
         return good(data.userId);
-      } catch {}
+      } catch { }
 
       try {
         const data = verify(
@@ -416,8 +428,8 @@ import { verify } from 'jsonwebtoken';
         }
 
         return good(data.userId);
-      } catch {}
-    } catch {}
+      } catch { }
+    } catch { }
   });
 
   server.listen(

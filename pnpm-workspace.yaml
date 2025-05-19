@@ -1,6 +1,8 @@
 packages:
   - api
   - extension
+  - extension-2
+  - web
 ignoredBuiltDependencies:
   - es5-ext
   - esbuild

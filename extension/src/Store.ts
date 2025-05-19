@@ -2,20 +2,28 @@ import type * as vscode from 'vscode';
 import { accessTokenKey, refreshTokenKey } from './constants';
 
 export class Store {
-  static globalState: vscode.ExtensionContext['globalState'];
+  static globalState: vscode.Memento;
 
-  static getRefreshToken() {
-    return Store.globalState.get<string>(refreshTokenKey) || '';
-  }
-
-  static getAccessToken() {
+  static getAccessToken(): string {
     return Store.globalState.get<string>(accessTokenKey) || '';
   }
 
-  static isLoggedIn() {
+  static getRefreshToken(): string {
+    return Store.globalState.get<string>(refreshTokenKey) || '';
+  }
+
+  static async updateTokens(
+    accessToken: string,
+    refreshToken: string,
+  ): Promise<void> {
+    await Store.globalState.update(accessTokenKey, accessToken);
+    await Store.globalState.update(refreshTokenKey, refreshToken);
+  }
+
+  static isLoggedIn(): boolean {
     return (
-      !!Store.globalState.get(accessTokenKey) &&
-      !!Store.globalState.get(refreshTokenKey)
+      !!Store.globalState.get<string>(accessTokenKey) &&
+      !!Store.globalState.get<string>(refreshTokenKey)
     );
   }
 }

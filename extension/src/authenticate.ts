@@ -1,7 +1,7 @@
 import koa from 'koa';
 import Router from '@koa/router';
 import * as vscode from 'vscode';
-import { accessTokenKey, apiBaseUrl, refreshTokenKey } from './constants';
+import { apiBaseUrl } from './constants';
 import { Store } from './Store';
 
 export const authenticate = (
@@ -16,24 +16,26 @@ export const authenticate = (
 
   const router = new Router();
 
-  router.get('/', (ctx) => {
+  router.get('/', (ctx: koa.Context) => {
     ctx.response.body = 'Hello world';
   });
 
-  router.get('/callback/:accessToken/:refreshToken', async (ctx) => {
-    const { accessToken, refreshToken } = ctx.params;
+  router.get(
+    '/callback/:accessToken/:refreshToken',
+    async (ctx: koa.Context) => {
+      const { accessToken, refreshToken } = ctx.params;
 
-    if (!accessToken || !refreshToken) {
-      ctx.response.body = 'Something went wrong';
-      return;
-    }
+      if (!accessToken || !refreshToken) {
+        ctx.response.body = 'Something went wrong';
+        return;
+      }
 
-    await Store.globalState.update(accessTokenKey, accessToken);
-    await Store.globalState.update(refreshTokenKey, refreshToken);
+      // Use the Store.updateTokens method
+      await Store.updateTokens(accessToken, refreshToken);
 
-    fn({ accessToken, refreshToken });
+      fn({ accessToken, refreshToken });
 
-    ctx.response.body = `
+      ctx.response.body = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -59,14 +61,16 @@ export const authenticate = (
               width: 100%;
               margin: 0;
             }
-
           </style>
       </body>
     </html>
     `;
-  });
+    },
+  );
 
   app.use(router.routes());
 
-  app.listen(54321);
+  app.listen(54321, () => {
+    console.log('Authentication server started on port 54321');
+  });
 };
