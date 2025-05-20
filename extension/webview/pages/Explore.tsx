@@ -10,7 +10,7 @@ import {
 } from '../shared/api';
 import type { CommonProps } from '../shared/types';
 
-interface ExploreProps extends CommonProps {}
+interface ExploreProps extends CommonProps { }
 
 const Explore = ({ vscode, onPageChange }: ExploreProps) => {
   const [loadingState, setLoadingState] = useState<'init' | 'ready' | 'more'>(
@@ -71,7 +71,7 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
   };
 
   if (loadingState === 'init') {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner />;
   }
 
   return (

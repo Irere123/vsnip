@@ -82,7 +82,7 @@ const Profile = ({ vscode, onPageChange }: ProfileProps) => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner />;
   }
 
   if (!user) {

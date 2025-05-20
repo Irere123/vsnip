@@ -8,6 +8,8 @@ import {
   query,
 } from '../shared/api';
 import type { Page } from '../shared/types';
+import { useWebSocket, type WebSocketMessage } from '../shared/websocket';
+import { useAppContext } from '../context/AppContext';
 
 interface MessagesProps {
   vscode: {
@@ -21,6 +23,22 @@ interface MessagesProps {
 const Messages = ({ vscode, onPageChange }: MessagesProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const { subscribe } = useWebSocket();
+  const { userProfile } = useAppContext();
+
+  // Helper to sort conversations by most recent message
+  const sortConversations = (convs: Conversation[]) => {
+    return [...convs].sort((a, b) => {
+      const dateA = a.message
+        ? new Date(a.message.created_at).getTime()
+        : new Date(a.created_at).getTime();
+      const dateB = b.message
+        ? new Date(b.message.created_at).getTime()
+        : new Date(b.created_at).getTime();
+
+      return dateB - dateA; // Most recent first
+    });
+  };
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -28,7 +46,8 @@ const Messages = ({ vscode, onPageChange }: MessagesProps) => {
         const response = (await query(
           '/conversations/100',
         )) as ConversationsResponse;
-        setConversations(response.conversations);
+
+        setConversations(sortConversations(response.conversations));
       } catch (error) {
         console.error('Error fetching conversations:', error);
         setConversations([]);
@@ -38,7 +57,65 @@ const Messages = ({ vscode, onPageChange }: MessagesProps) => {
     };
 
     fetchConversations();
-  }, []);
+
+    // Subscribe to WebSocket messages to handle real-time conversation updates
+    const unsubscribe = subscribe((wsMessage: WebSocketMessage) => {
+      if (
+        wsMessage.type === 'new-message' &&
+        wsMessage.message &&
+        userProfile?.id
+      ) {
+        // Update the conversation list when a new message is received
+        setConversations((currentConversations) => {
+          const { message } = wsMessage;
+          const senderId = message.senderId;
+          const isCurrentUser = senderId === userProfile.id;
+          const otherUserId = isCurrentUser ? message.recipientId : senderId;
+
+          // Find if conversation already exists for this user
+          const conversationIndex = currentConversations.findIndex(
+            (conv) => conv.userId === otherUserId,
+          );
+
+          if (conversationIndex === -1) {
+            // If conversation doesn't exist, we'd need to fetch the complete user info
+            // In a real app, we would fetch user details here
+            // For now, just return the existing conversations
+            return currentConversations;
+          }
+
+          // Create a new array with the updated conversation
+          const updatedConversations = [...currentConversations];
+          const conversation = updatedConversations[conversationIndex];
+
+          // Update the conversation with new message info
+          updatedConversations[conversationIndex] = {
+            ...conversation,
+            message: {
+              text: message.text,
+              created_at: new Date(message.createdAt).toISOString(),
+            },
+            // Mark as unread if the message is from the other user
+            read: isCurrentUser ? conversation.read : false,
+          };
+
+          // Sort conversations again to show most recent first
+          return sortConversations(updatedConversations);
+        });
+      } else if (wsMessage.type === 'unfriend' && wsMessage.userId) {
+        // Handle unfriending
+        setConversations((currentConversations) =>
+          currentConversations.filter(
+            (conv) => conv.userId !== wsMessage.userId,
+          ),
+        );
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribe, userProfile]);
 
   const handleConversationClick = (userId: string) => {
     if (onPageChange) {
@@ -85,11 +162,20 @@ const Messages = ({ vscode, onPageChange }: MessagesProps) => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner />;
+  }
+
+  // Add a check for user profile
+  if (!userProfile) {
+    return (
+      <div className="p-4">
+        <p>User profile not available. Please try logging in again.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-4">
+    <div >
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-semibold">Messages</h1>
         <BackBar onBack={handleBack} />

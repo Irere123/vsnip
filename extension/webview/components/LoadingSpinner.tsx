@@ -1,23 +1,41 @@
 import React from 'react';
 
 interface LoadingSpinnerProps {
-  size?: 'small' | 'medium' | 'large';
+  className?: string
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'medium' }) => {
-  const sizeClass = {
-    small: 'w-4 h-4 border-2',
-    medium: 'w-8 h-8 border-3',
-    large: 'w-12 h-12 border-4',
-  };
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ className }) => {
 
   return (
-    <div className="flex justify-center items-center p-4">
-      <div
-        className={`${sizeClass[size]} rounded-full border-solid border-[color:var(--vscode-progressBar-background)] border-t-[color:var(--vscode-focusBorder)] animate-spin`}
-        role="status"
-        aria-label="Loading"
-      />
+    <div className='flex justify-center h-full w-full items-center'>
+      <div className={`h-5 w-5 ${className}`}>
+        <div
+          style={{
+            position: "relative",
+            top: "50%",
+            left: "50%",
+          }}
+          className={`loading-spinner h-5 w-5 ${className}`}
+        >
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              style={{
+                animationDelay: `${-1.2 + 0.1 * i} s`,
+                background: "gray",
+                position: "absolute",
+                borderRadius: "1rem",
+                width: "30%",
+                height: "8%",
+                left: "-10%",
+                top: "-4%",
+                transform: `rotate(${30 * i}deg) translate(120%)`,
+              }}
+              className="animate-spinner"
+            />
+          ))}
+        </div>
+      </div >
     </div>
   );
 };

@@ -3,9 +3,23 @@ import {
   useContext,
   useState,
   useEffect,
+  useMemo,
+  useCallback,
   type ReactNode,
 } from 'react';
 import type { Page } from '../shared/types';
+import { webSocketManager } from '../shared/websocket';
+import { query } from '../shared/api';
+
+// Define user profile interface
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  avatar: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface AppContextType {
   vscode: any;
@@ -19,6 +33,9 @@ interface AppContextType {
   setPage: (page: Page) => void;
   viewParams: Record<string, any>;
   setViewParams: (params: Record<string, any>) => void;
+  userProfile: UserProfile | null;
+  isLoadingProfile: boolean;
+  refreshUserProfile: () => Promise<void>;
 }
 
 // Create context with undefined initial value
@@ -42,13 +59,9 @@ const getVsCodeApi = () => {
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  // Get VS Code API only once when the component mounts
   const [vscode] = useState(getVsCodeApi());
-
-  // Default state from vscode if available
   const defaultState = vscode.getState() || {};
 
-  // State for tokens and API URL
   const [accessToken, setAccessToken] = useState<string | null>(
     window.accessToken || null,
   );
@@ -56,107 +69,168 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     window.refreshToken || null,
   );
   const [apiBaseUrl, setApiBaseUrl] = useState<string>(window.apiBaseUrl || '');
-
-  // State for navigation
   const [page, setPage] = useState<Page>(defaultState.page || 'sidebar');
   const [viewParams, setViewParams] = useState<Record<string, any>>(
     defaultState.params || {},
   );
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(false);
 
-  // Save state to extension storage when it changes
+  const isAuthenticated = useMemo(
+    () => !!accessToken && !!refreshToken,
+    [accessToken, refreshToken],
+  );
+
+  const stableSetPage = useCallback((newPage: Page) => {
+    setPage(newPage);
+  }, []);
+
+  const stableSetViewParams = useCallback((params: Record<string, any>) => {
+    setViewParams(params);
+  }, []);
+
+  const refreshUserProfile = useCallback(async () => {
+    if (!accessToken || !refreshToken) {
+      setUserProfile(null);
+      return;
+    }
+    setIsLoadingProfile(true);
+    try {
+      const response = await query('/me'); // query is stable if defined outside or memoized
+      if (response?.user) {
+        setUserProfile(response.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setUserProfile(null); // Clear profile on error
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [accessToken, refreshToken]); // query should be stable or added as dependency
+
   useEffect(() => {
     const state = { page, params: viewParams };
     vscode.setState(state);
-  }, [page, viewParams]);
+  }, [page, viewParams, vscode]);
 
-  // Request tokens from extension on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshUserProfile();
+    }
+  }, [isAuthenticated, refreshUserProfile]);
+
+  useEffect(() => {
+    if (accessToken && refreshToken && apiBaseUrl) {
+      webSocketManager.connect(apiBaseUrl, accessToken, refreshToken);
+    } else if (!accessToken || !refreshToken) {
+      webSocketManager.disconnect();
+    }
+    // Cleanup on unmount or when dependencies change causing disconnect
+    return () => {
+      if (!accessToken || !refreshToken) {
+        webSocketManager.disconnect();
+      }
+    };
+  }, [accessToken, refreshToken, apiBaseUrl, isAuthenticated]);
+
+  const updateTokens = useCallback(
+    (newAccessToken: string, newRefreshToken: string) => {
+      setAccessToken(newAccessToken);
+      setRefreshToken(newRefreshToken);
+      window.accessToken = newAccessToken;
+      window.refreshToken = newRefreshToken;
+      vscode.postMessage({
+        type: 'tokens',
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      });
+    },
+    [vscode],
+  );
+
+  const logout = useCallback(() => {
+    setAccessToken(null);
+    setRefreshToken(null);
+    window.accessToken = undefined;
+    window.refreshToken = undefined;
+    stableSetPage('sidebar');
+    stableSetViewParams({});
+    setUserProfile(null);
+    webSocketManager.disconnect();
+    vscode.postMessage({ type: 'logout' });
+  }, [vscode, stableSetPage, stableSetViewParams]);
+
   useEffect(() => {
     vscode.postMessage({ type: 'send-tokens' });
-
     const messageHandler = (event: MessageEvent) => {
       const message = event.data;
-
-      console.log('message', message);
-
       if (
         message.command === 'init-tokens' ||
         message.command === 'tokens-updated'
       ) {
         if (message.payload) {
-          setAccessToken(message.payload.accessToken || null);
-          setRefreshToken(message.payload.refreshToken || null);
+          updateTokens(
+            message.payload.accessToken || '',
+            message.payload.refreshToken || '',
+          );
           if (message.payload.apiBaseUrl) {
             setApiBaseUrl(message.payload.apiBaseUrl);
           }
         }
-      }
-
-      if (message.command === 'login-complete') {
+      } else if (message.command === 'login-complete') {
         if (message.payload) {
-          setAccessToken(message.payload.accessToken || null);
-          setRefreshToken(message.payload.refreshToken || null);
+          updateTokens(
+            message.payload.accessToken || '',
+            message.payload.refreshToken || '',
+          );
+          refreshUserProfile(); // Refresh profile on login
+          stableSetPage('profile'); // Navigate to profile page
         }
-      }
-
-      if (message.command === 'logout-complete') {
-        setAccessToken(null);
-        setRefreshToken(null);
-        setPage('sidebar');
-        setViewParams({});
+      } else if (message.command === 'logout-complete') {
+        logout();
       }
     };
-
     window.addEventListener('message', messageHandler);
     return () => window.removeEventListener('message', messageHandler);
-  }, []);
+  }, [vscode, updateTokens, logout, refreshUserProfile, stableSetPage]);
 
-  const updateTokens = (newAccessToken: string, newRefreshToken: string) => {
-    setAccessToken(newAccessToken);
-    setRefreshToken(newRefreshToken);
-
-    window.accessToken = newAccessToken;
-    window.refreshToken = newRefreshToken;
-
-    vscode.postMessage({
-      type: 'tokens',
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-    });
-  };
-
-  const logout = () => {
-    setAccessToken(null);
-    setRefreshToken(null);
-
-    window.accessToken = undefined;
-    window.refreshToken = undefined;
-
-    setPage('sidebar');
-    setViewParams({});
-
-    vscode.postMessage({
-      type: 'logout',
-    });
-  };
+  const contextValue = useMemo(
+    () => ({
+      vscode,
+      apiBaseUrl,
+      accessToken,
+      refreshToken,
+      isAuthenticated,
+      updateTokens,
+      logout,
+      page,
+      setPage: stableSetPage,
+      viewParams,
+      setViewParams: stableSetViewParams,
+      userProfile,
+      isLoadingProfile,
+      refreshUserProfile,
+    }),
+    [
+      vscode,
+      apiBaseUrl,
+      accessToken,
+      refreshToken,
+      isAuthenticated,
+      updateTokens,
+      logout,
+      page,
+      stableSetPage,
+      viewParams,
+      stableSetViewParams,
+      userProfile,
+      isLoadingProfile,
+      refreshUserProfile,
+    ],
+  );
 
   return (
-    <AppContext.Provider
-      value={{
-        vscode,
-        apiBaseUrl,
-        accessToken,
-        refreshToken,
-        isAuthenticated: !!accessToken,
-        updateTokens,
-        logout,
-        page,
-        setPage,
-        viewParams,
-        setViewParams,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
   );
 };
 

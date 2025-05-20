@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useApi } from '../shared/api';
 import { useAppContext } from '../context/AppContext';
@@ -23,11 +22,10 @@ const Sidebar = ({ onPageChange }: SidebarProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
 
-  // Fetch user data
   const fetchUser = async () => {
     try {
       const response = await query('/me');
-      const userData = response.user || response; // Handle different API response formats
+      const userData = response.user || response;
       setUser(userData);
       return userData;
     } catch (error) {
@@ -37,7 +35,6 @@ const Sidebar = ({ onPageChange }: SidebarProps) => {
   };
 
   useEffect(() => {
-    // Load user data if authenticated
     const loadUserData = async () => {
       if (isAuthenticated) {
         await fetchUser();
@@ -48,14 +45,12 @@ const Sidebar = ({ onPageChange }: SidebarProps) => {
     loadUserData();
   }, [isAuthenticated]);
 
-  // Listen for messages from the extension
   useEffect(() => {
     const messageHandler = async (event: MessageEvent) => {
       const message = event.data;
 
       switch (message.command) {
         case 'login-complete':
-          // Fetch user data after login
           await fetchUser();
           setIsLoading(false);
           break;
@@ -87,32 +82,30 @@ const Sidebar = ({ onPageChange }: SidebarProps) => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner />;
   }
 
   if (!user || !isAuthenticated) {
     return (
       <div className="p-4">
-        <Card>
-          <h2 className="text-xl font-semibold mb-4">Welcome</h2>
-          <p className="mb-6 text-[color:var(--vscode-descriptionForeground)]">
-            Please log in to share your code snippets and chat with your peers.
+        <h2 className="text-xl font-semibold mb-4">Welcome</h2>
+        <p className="mb-6 text-[color:var(--vscode-descriptionForeground)]">
+          Please log in to share your code snippets and chat with your peers.
+        </p>
+        <div className="mb-6">
+          <p className="mb-4 text-xs">
+            By logging in with Google, you agree to our terms and privacy
+            policy.
           </p>
-          <div className="mb-6">
-            <p className="mb-4 text-xs">
-              By logging in with Google, you agree to our terms and privacy
-              policy.
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              console.log('Logging in');
-              vscode.postMessage({ type: 'login' });
-            }}
-          >
-            Login with Google
-          </Button>
-        </Card>
+        </div>
+        <Button
+          onClick={() => {
+            console.log('Logging in');
+            vscode.postMessage({ type: 'login' });
+          }}
+        >
+          Login with Google
+        </Button>
       </div>
     );
   }

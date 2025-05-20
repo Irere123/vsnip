@@ -32,7 +32,6 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Fetch user data from API
         const resp = await query('/me');
         setFormData({
           username: resp.user.username,
@@ -98,7 +97,7 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
   };
 
   if (isLoading) {
-    return <LoadingSpinner size="large" />;
+    return <LoadingSpinner />;
   }
 
   return (

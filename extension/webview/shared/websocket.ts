@@ -3,11 +3,12 @@
  */
 import type { Message } from './api';
 import { useAppContext } from '../context/AppContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export type WebSocketMessage =
   | { type: 'new-message'; message: Message }
-  | { type: 'unfriend'; userId: string };
+  | { type: 'unfriend'; userId: string }
+  | { type: 'message-open'; userId: string | null };
 
 /**
  * A simple implementation of a reconnecting WebSocket
@@ -140,7 +141,9 @@ class ReconnectingWebSocket {
    * Attempt to reconnect with exponential backoff
    */
   private reconnect(): void {
-    if (this.reconnectTimer || this.forceClosed) return;
+    if (this.reconnectTimer || this.forceClosed) {
+      return;
+    }
 
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
@@ -171,6 +174,8 @@ class ReconnectingWebSocket {
 class WebSocketManager {
   private webSocket: ReconnectingWebSocket | null = null;
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
+  private isConnected = false;
+  private currentChatUserId: string | null = null;
 
   constructor() {
     this.handleMessage = this.handleMessage.bind(this);
@@ -179,7 +184,7 @@ class WebSocketManager {
   /**
    * Connect to the WebSocket server
    */
-  connect(apiBaseUrl: string, accessToken: string): void {
+  connect(apiBaseUrl: string, accessToken: string, refreshToken: string): void {
     // Create a new websocket if it doesn't exist
     if (!this.webSocket) {
       this.webSocket = new ReconnectingWebSocket();
@@ -190,10 +195,17 @@ class WebSocketManager {
       // Log connection events
       this.webSocket.onOpen(() => {
         console.log('WebSocket connected successfully');
+        this.isConnected = true;
+
+        // If there was an active chat when connection was established, notify server
+        if (this.currentChatUserId) {
+          this.setActiveChatUser(this.currentChatUserId);
+        }
       });
 
       this.webSocket.onClose(() => {
         console.log('WebSocket disconnected');
+        this.isConnected = false;
       });
 
       this.webSocket.onError((error) => {
@@ -203,7 +215,7 @@ class WebSocketManager {
 
     // Convert HTTP URL to WebSocket URL
     const wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws');
-    const url = `${wsBaseUrl}/ws?token=${accessToken}`;
+    const url = `${wsBaseUrl}/ws?accessToken=${accessToken}&refreshToken=${refreshToken}`;
 
     // Connect to the WebSocket server
     this.webSocket.connect(url);
@@ -214,7 +226,10 @@ class WebSocketManager {
    */
   disconnect(): void {
     if (this.webSocket) {
+      // Clear active chat user
+      this.setActiveChatUser(null);
       this.webSocket.disconnect();
+      this.isConnected = false;
     }
   }
 
@@ -228,6 +243,18 @@ class WebSocketManager {
     return () => {
       this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
     };
+  }
+
+  /**
+   * Set the user ID of the currently open chat
+   * This notifies the server that the user is actively viewing messages from this user
+   */
+  setActiveChatUser(userId: string | null): void {
+    this.currentChatUserId = userId;
+
+    if (this.webSocket && this.isConnected) {
+      this.webSocket.send(JSON.stringify({ type: 'message-open', userId }));
+    }
   }
 
   /**
@@ -250,14 +277,15 @@ export const webSocketManager = new WebSocketManager();
  * React hook for using WebSocket
  */
 export const useWebSocket = () => {
-  const { apiBaseUrl, accessToken, isAuthenticated } = useAppContext();
+  const { apiBaseUrl, accessToken, refreshToken, isAuthenticated } =
+    useAppContext();
   const [isConnected, setIsConnected] = useState(false);
 
   // Initialize WebSocket connection when component mounts
   useEffect(() => {
-    if (apiBaseUrl && accessToken && isAuthenticated) {
+    if (apiBaseUrl && accessToken && refreshToken && isAuthenticated) {
       console.log('Initializing WebSocket connection from hook');
-      webSocketManager.connect(apiBaseUrl, accessToken);
+      webSocketManager.connect(apiBaseUrl, accessToken, refreshToken);
       setIsConnected(true);
 
       // Clean up WebSocket connection when component unmounts
@@ -266,15 +294,27 @@ export const useWebSocket = () => {
         setIsConnected(false);
       };
     }
-  }, [apiBaseUrl, accessToken, isAuthenticated]);
+  }, [apiBaseUrl, accessToken, refreshToken, isAuthenticated]);
 
   // Subscribe to WebSocket messages
-  const subscribe = (handler: (message: WebSocketMessage) => void) => {
-    return webSocketManager.subscribe(handler);
-  };
+  const subscribe = useCallback(
+    (handler: (message: WebSocketMessage) => void) => {
+      return webSocketManager.subscribe(handler);
+    },
+    [], // webSocketManager is stable, so no dependencies needed for subscribe
+  );
+
+  // Set active chat user
+  const setActiveChatUser = useCallback(
+    (userId: string | null) => {
+      webSocketManager.setActiveChatUser(userId);
+    },
+    [], // webSocketManager is stable
+  );
 
   return {
     subscribe,
     isConnected,
+    setActiveChatUser,
   };
 };
