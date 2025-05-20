@@ -11,7 +11,6 @@ import type { Page } from '../shared/types';
 import { webSocketManager } from '../shared/websocket';
 import { query } from '../shared/api';
 
-// Define user profile interface
 export interface UserProfile {
   id: string;
   username: string;
@@ -38,12 +37,9 @@ interface AppContextType {
   refreshUserProfile: () => Promise<void>;
 }
 
-// Create context with undefined initial value
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Function to safely acquire VS Code API only once
 const getVsCodeApi = () => {
-  // @ts-ignore
   const vscode = window.vscode;
   if (!vscode) {
     console.error('VS Code API not available');
@@ -51,7 +47,7 @@ const getVsCodeApi = () => {
     return {
       postMessage: (message: any) => console.log('VS Code message:', message),
       getState: () => ({}),
-      setState: () => {},
+      setState: () => { },
     };
   }
 
@@ -96,17 +92,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoadingProfile(true);
     try {
-      const response = await query('/me'); // query is stable if defined outside or memoized
+      const response = await query('/me');
       if (response?.user) {
         setUserProfile(response.user);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      setUserProfile(null); // Clear profile on error
+      setUserProfile(null);
     } finally {
       setIsLoadingProfile(false);
     }
-  }, [accessToken, refreshToken]); // query should be stable or added as dependency
+  }, [accessToken, refreshToken]);
 
   useEffect(() => {
     const state = { page, params: viewParams };

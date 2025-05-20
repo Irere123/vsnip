@@ -1,13 +1,13 @@
 import { sql } from 'drizzle-orm';
 import { boolean, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { userEntity } from '../user';
+import { users } from '../user';
 
 export const conversationEntity = pgTable('conversations', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
-  userId1: uuid('userId1').references(() => userEntity.id, {
+  userId1: uuid('userId1').references(() => users.id, {
     onDelete: 'cascade',
   }),
-  userId2: uuid('userId2').references(() => userEntity.id, {
+  userId2: uuid('userId2').references(() => users.id, {
     onDelete: 'cascade',
   }),
   read1: boolean('read1').default(false),

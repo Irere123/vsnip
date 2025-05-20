@@ -8,20 +8,10 @@
   "engines": {
     "vscode": "^1.100.0"
   },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onStartupFinished"
-  ],
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "extension-2.showWebview",
-        "title": "Show React Webview"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -41,7 +31,19 @@
           "contextualTitle": "Snip"
         }
       ]
-    }
+    },
+    "commands": [
+      {
+        "command": "snip.authenticate",
+        "title": "Authenticate",
+        "category": "Snip"
+      },
+      {
+        "command": "snip.reloadWebview",
+        "title": "Reload Webview",
+        "category": "Snip"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
@@ -86,6 +88,7 @@
     "date-fns": "^3.3.1",
     "koa": "^3.0.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "reconnecting-websocket": "^4.4.0"
   }
 }

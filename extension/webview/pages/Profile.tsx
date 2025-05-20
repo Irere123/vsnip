@@ -25,6 +25,7 @@ interface ProfileProps {
 
 const Profile = ({ vscode, onPageChange }: ProfileProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -97,9 +98,15 @@ const Profile = ({ vscode, onPageChange }: ProfileProps) => {
   }
 
   return (
-    <div className="p-4">
+    <div>
       <div className="flex justify-end mb-4">
         <ExploreIcon onClick={handleExplore} />
+        <button type='button' onClick={() => {
+          setIsFullScreen(!isFullScreen)
+          vscode.postMessage({
+            type: "full-screen"
+          })
+        }}>{!isFullScreen ? "Fullscreen" : "Minimize"}</button>
       </div>
 
       <div className="flex flex-col items-center p-6">

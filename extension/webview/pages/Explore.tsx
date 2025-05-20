@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Button from '../components/Button';
 import BackBar from '../components/BackBar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -9,6 +8,7 @@ import {
   mutation,
 } from '../shared/api';
 import type { CommonProps } from '../shared/types';
+import SearchBar from '../components/SearchBar';
 
 interface ExploreProps extends CommonProps { }
 
@@ -21,12 +21,9 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        // Attempt to fetch real profiles from the API
         const payload = (await query('/feed')) as FeedResponse;
         setProfiles(payload.profiles);
-        console.log('profiles', payload.profiles);
       } catch (error) {
-        // If the API call fails, use mock data for development
         console.error('Error fetching profiles:', error);
         setProfiles([]);
       } finally {
@@ -80,12 +77,13 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
         <h2 className="text-xl font-semibold">Explore</h2>
         <BackBar onBack={handleBack} />
       </div>
-
       <div className="space-y-4">
+        <SearchBar />
         {profiles.map((profile) => (
           <div
             key={profile.id}
-            className="user-card p-4 border border-[color:var(--vscode-input-border)] rounded-md"
+            onClick={() => handleMessageUser(profile.id)}
+            className="user-card p-4 border border-[color:var(--vscode-input-border)] rounded-md cursor-pointer w-full"
           >
             <div className="flex items-center gap-4">
               <img
@@ -101,9 +99,6 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
                   {profile.bio || 'No bio provided'}
                 </p>
               </div>
-              <Button onClick={() => handleMessageUser(profile.id)}>
-                Message
-              </Button>
             </div>
           </div>
         ))}

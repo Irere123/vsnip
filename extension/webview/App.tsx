@@ -69,7 +69,7 @@ function AppContent() {
   const renderPage = () => {
     switch (page) {
       case 'loading':
-        return <LoadingSpinner size="large" />;
+        return <LoadingSpinner />;
       case 'explore':
         return <Explore vscode={vscode} onPageChange={handlePageChange} />;
       case 'profile':

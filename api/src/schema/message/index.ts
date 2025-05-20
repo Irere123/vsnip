@@ -1,17 +1,17 @@
 import { sql } from 'drizzle-orm';
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { conversationEntity } from '../conversation';
-import { userEntity } from '../user';
+import { users } from '../user';
 
 export const messageEntity = pgTable('messages', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   conversationId: uuid('conversation_id').references(
     () => conversationEntity.id,
   ),
-  senderId: uuid('sender_id').references(() => userEntity.id, {
+  senderId: uuid('sender_id').references(() => users.id, {
     onDelete: 'cascade',
   }),
-  recipientId: uuid('recipient_id').references(() => userEntity.id, {
+  recipientId: uuid('recipient_id').references(() => users.id, {
     onDelete: 'cascade',
   }),
   text: text('text'),

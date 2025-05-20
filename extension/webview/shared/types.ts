@@ -1,4 +1,3 @@
-// Common types for the application
 export type Page =
   | 'sidebar'
   | 'profile'

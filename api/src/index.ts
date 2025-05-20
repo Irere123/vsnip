@@ -1,17 +1,17 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
-import http from 'http';
+import http from 'node:http';
 import passport from 'passport';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import type WebSocket from 'ws';
 import { Server } from 'ws';
-import url from 'url';
+import url from 'node:url';
 
 import { db } from './db';
-import { conversationEntity, messageEntity, userEntity } from './schema';
+import { conversationEntity, messageEntity, users } from './schema';
 import { __prod__ } from './constants';
 import { createTokens, isAuth } from './auth';
 import { getUserIdOrder } from './utils';
@@ -38,43 +38,46 @@ import { verify } from 'jsonwebtoken';
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_OAUTH_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
+        clientID: process.env.GOOGLE_OAUTH_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
         callbackURL: `${process.env.SERVER_URL}/auth/google/callback`,
         scope: ['profile', 'email'],
       },
       async (_accessToken, _refreshToken, profile, cb) => {
         try {
-          let users = await db
+          let [user] = await db
             .select()
-            .from(userEntity)
-            .where(eq(userEntity.googleId, profile.id))
+            .from(users)
+            .where(eq(users.googleId, profile.id))
             .limit(1);
 
-          if (users[0]) {
-            users = await db
-              .update(userEntity)
-              .set({
-                avatar: profile.photos![0].value,
-                email: profile.emails![0].value,
-                googleId: profile.id,
-                username: profile.displayName,
-              })
-              .where(eq(userEntity.googleId, profile.id))
-              .returning();
-          } else {
-            users = await db
-              .insert(userEntity)
-              .values({
-                username: profile.displayName,
-                avatar: profile.photos![0].value,
-                googleId: profile.id,
-                email: profile.emails![0].value,
-              })
-              .returning();
+          if (profile.photos && profile.emails) {
+            if (user) {
+              [user] = await db
+                .update(users)
+                .set({
+                  avatar: profile.photos[0].value,
+                  email: profile.emails[0].value,
+                  googleId: profile.id,
+                  username: profile.displayName,
+                })
+                .where(eq(users.googleId, profile.id))
+                .returning();
+            } else {
+
+              [user] = await db
+                .insert(users)
+                .values({
+                  username: profile.displayName,
+                  avatar: profile.photos[0].value,
+                  googleId: profile.id,
+                  email: profile.emails[0].value,
+                })
+                .returning();
+            }
           }
 
-          cb(null, createTokens(users[0]));
+          cb(null, createTokens(user));
         } catch (err) {
           console.log(err);
           cb(new Error('Internal server error'));
@@ -130,7 +133,7 @@ import { verify } from 'jsonwebtoken';
         res.redirect(
           `${__prod__
             ? `vsnip://`
-            : `exp:${process.env.SERVER_URL!.replace('http:', '').split(':')[0]
+            : `exp:${process.env.SERVER_URL.replace('http:', '').split(':')[0]
             }:19000/--/`
           }tokens2/${req.user.accessToken}/${req.user.refreshToken}`,
         );
@@ -138,7 +141,7 @@ import { verify } from 'jsonwebtoken';
         res.redirect(
           `${__prod__
             ? `vsnip://`
-            : `exp:${process.env.SERVER_URL!.replace('http:', '').split(':')[0]
+            : `exp:${process.env.SERVER_URL.replace('http:', '').split(':')[0]
             }:19000/--/`
           }tokens/${req.user.accessToken}/${req.user.refreshToken}`,
         );
@@ -157,13 +160,13 @@ import { verify } from 'jsonwebtoken';
       });
       return;
     }
-    const users = await db
+    const [user] = await db
       .select()
-      .from(userEntity)
-      .where(eq(userEntity.id, req.userId));
+      .from(users)
+      .where(eq(users.id, req.userId));
 
     res.json({
-      user: users[0],
+      user,
     });
   });
 
@@ -283,40 +286,44 @@ import { verify } from 'jsonwebtoken';
     app.post('/dev/user', async (req, res) => {
       const { email, bio, username, avatar } = req.body;
 
-      const user = await db
-        .insert(userEntity)
+      const [user] = await db
+        .insert(users)
         .values({ username, email, bio, avatar })
         .returning();
 
-      return res.json(user[0]);
+      return res.json(user);
     });
   }
 
   app.post('/message', isAuth(), async (req: any, res) => {
     const { conversationId, recipientId, text } = req.body;
-    const m = await db
+    const [m] = await db
       .insert(messageEntity)
       .values({ conversationId, recipientId, text, senderId: req.userId })
       .returning();
 
-    wsSend(m[0].recipientId!, { type: 'new-message', message: m[0] });
+    if (!m.recipientId) {
+      return createHttpError(400, 'Not authorized');
+    }
+
+    wsSend(m.recipientId, { type: 'new-message', message: m });
 
     if (
-      !(m[0].recipientId! in wsUsers) ||
-      wsUsers[m[0].recipientId!].openChatUserId !== req.userId
+      !(m.recipientId in wsUsers) ||
+      wsUsers[m.recipientId].openChatUserId !== req.userId
     ) {
-      const userIdOrder = getUserIdOrder(req.userId, m[0].recipientId!);
+      const userIdOrder = getUserIdOrder(req.userId, m.recipientId);
       await db
         .update(conversationEntity)
         .set({
           unfriended: false,
           ...userIdOrder,
-          [userIdOrder.userId1 === m[0].recipientId ? 'read1' : 'read2']: false,
+          [userIdOrder.userId1 === m.recipientId ? 'read1' : 'read2']: false,
         })
         .where(eq(conversationEntity.id, conversationId));
     }
 
-    res.json({ message: m[0] });
+    return res.json({ message: m });
   });
 
   app.put('/user', isAuth(), async (req: any, res) => {
@@ -326,10 +333,11 @@ import { verify } from 'jsonwebtoken';
       return createHttpError(400, 'Not authorized');
     }
 
-    const user = await db
-      .update(userEntity)
+    const [user] = await db
+      .update(users)
       .set({ email, username })
-      .where(eq(userEntity.id, req.userId));
+      .where(eq(users.id, req.userId))
+      .returning();
 
     return res.json({ user });
   });
@@ -341,10 +349,10 @@ import { verify } from 'jsonwebtoken';
       return createHttpError(402, 'You must provide the ID');
     }
 
-    const user = await db
+    const [user] = await db
       .select()
-      .from(userEntity)
-      .where(eq(userEntity.id, id));
+      .from(users)
+      .where(eq(users.id, id));
 
     return res.json(user);
   });
@@ -393,7 +401,7 @@ import { verify } from 'jsonwebtoken';
     try {
       const {
         query: { accessToken, refreshToken },
-      } = url.parse(request.url!, true);
+      } = url.parse(request.url as string, true);
 
       if (
         !accessToken ||
@@ -407,7 +415,7 @@ import { verify } from 'jsonwebtoken';
       try {
         const data = verify(
           accessToken,
-          process.env.ACCESS_TOKEN_SECRET!,
+          process.env.ACCESS_TOKEN_SECRET,
         ) as any;
 
         return good(data.userId);
@@ -418,12 +426,12 @@ import { verify } from 'jsonwebtoken';
           refreshToken,
           process.env.REFRESH_TOKEN_SECRET as string,
         ) as any;
-        const user = await db
+        const [user] = await db
           .select()
-          .from(userEntity)
-          .where(eq(userEntity.id, data.userId));
+          .from(users)
+          .where(eq(users.id, data.userId));
 
-        if (!user[0] || user[0].tokenVersion !== data.tokenVersion) {
+        if (!user || user.tokenVersion !== data.tokenVersion) {
           return bad();
         }
 

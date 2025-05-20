@@ -3,7 +3,7 @@ import createHttpError from 'http-errors';
 import type { NextFunction, RequestHandler, Response } from 'express';
 import { eq } from 'drizzle-orm';
 
-import { type User, userEntity } from './schema';
+import { type User, users } from './schema';
 import { db } from './db';
 
 export type RefreshTokenData = {
@@ -38,48 +38,48 @@ export const createTokens = (
 
 export const isAuth: (st?: boolean) => RequestHandler<{}, any, any> =
   (shouldThrow = true) =>
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
-    const accessToken = req.headers['access-token'];
-    if (typeof accessToken !== 'string') {
-      return next(shouldThrow && createHttpError(401, 'not authenticated'));
-    }
+    async (req: any, res: Response, next: NextFunction): Promise<void> => {
+      const accessToken = req.headers['access-token'];
+      if (typeof accessToken !== 'string') {
+        return next(shouldThrow && createHttpError(401, 'not authenticated'));
+      }
 
-    try {
-      const data = <AccessTokenData>(
-        verify(accessToken, process.env.ACCESS_TOKEN_SECRET)
-      );
+      try {
+        const data = <AccessTokenData>(
+          verify(accessToken, process.env.ACCESS_TOKEN_SECRET)
+        );
+        req.userId = data.userId;
+        return next();
+      } catch { }
+
+      const refreshToken = req.headers['refresh-token'];
+      if (typeof refreshToken !== 'string') {
+        return next(shouldThrow && createHttpError(401, 'not authenticated'));
+      }
+
+      let data: RefreshTokenData;
+      try {
+        data = <RefreshTokenData>(
+          verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
+        );
+      } catch {
+        return next(shouldThrow && createHttpError(401, 'not authenticated'));
+      }
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, data.userId));
+      // token has been invalidated or user deleted
+      if (!user || user.tokenVersion !== data.tokenVersion) {
+        return next(shouldThrow && createHttpError(401, 'not authenticated'));
+      }
+
+      const tokens = createTokens(user);
+
+      res.setHeader('refresh-token', tokens.refreshToken);
+      res.setHeader('access-token', tokens.accessToken);
       req.userId = data.userId;
-      return next();
-    } catch {}
 
-    const refreshToken = req.headers['refresh-token'];
-    if (typeof refreshToken !== 'string') {
-      return next(shouldThrow && createHttpError(401, 'not authenticated'));
-    }
-
-    let data: RefreshTokenData;
-    try {
-      data = <RefreshTokenData>(
-        verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
-      );
-    } catch {
-      return next(shouldThrow && createHttpError(401, 'not authenticated'));
-    }
-
-    const user = await db
-      .select()
-      .from(userEntity)
-      .where(eq(userEntity.id, data.userId));
-    // token has been invalidated or user deleted
-    if (!user || user[0].tokenVersion !== data.tokenVersion) {
-      return next(shouldThrow && createHttpError(401, 'not authenticated'));
-    }
-
-    const tokens = createTokens(user[0]);
-
-    res.setHeader('refresh-token', tokens.refreshToken);
-    res.setHeader('access-token', tokens.accessToken);
-    req.userId = data.userId;
-
-    next();
-  };
+      next();
+    };

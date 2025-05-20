@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import { getNonce } from '../getNonce';
 import { apiBaseUrl } from '../constants';
 import { Store } from '../Store';
+import { authenticate } from '../authenticate';
 
-export class ExplorePanel {
-  public static currentPanel: ExplorePanel | undefined;
+export class SidebarFullScreenPanel {
+  public static currentPanel: SidebarFullScreenPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
@@ -15,20 +16,17 @@ export class ExplorePanel {
       : undefined;
 
     // If we already have a panel, show it
-    if (ExplorePanel.currentPanel) {
-      ExplorePanel.currentPanel._panel.reveal(column);
+    if (SidebarFullScreenPanel.currentPanel) {
+      SidebarFullScreenPanel.currentPanel._panel.reveal(column);
       return;
     }
 
-    // Otherwise, create a new panel
     const panel = vscode.window.createWebviewPanel(
       'snipExplore',
-      'Snip Explore',
+      'VSCode Snip',
       column || vscode.ViewColumn.One,
       {
-        // Enable JavaScript in the webview
         enableScripts: true,
-        // Restrict the webview to only load resources from the dist directory
         localResourceRoots: [
           vscode.Uri.joinPath(extensionUri, 'dist/webview'),
           extensionUri,
@@ -37,14 +35,16 @@ export class ExplorePanel {
       },
     );
 
-    ExplorePanel.currentPanel = new ExplorePanel(panel, extensionUri);
+    SidebarFullScreenPanel.currentPanel = new SidebarFullScreenPanel(
+      panel,
+      extensionUri,
+    );
   }
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
     this._extensionUri = extensionUri;
 
-    // Set the webview's initial html content
     this._update();
 
     // Listen for when the panel is disposed
@@ -80,6 +80,38 @@ export class ExplorePanel {
             vscode.window.showErrorMessage(message.value);
             break;
           }
+
+          case 'login': {
+            console.log('Logging in');
+            authenticate((payload) => {
+              this._panel.webview.postMessage({
+                command: 'login-complete',
+                payload,
+              });
+            });
+            break;
+          }
+          case 'send-tokens': {
+            console.log('Sending tokens to webview');
+            this._panel.webview.postMessage({
+              command: 'init-tokens',
+              payload: {
+                accessToken: Store.getAccessToken(),
+                refreshToken: Store.getRefreshToken(),
+                apiBaseUrl: apiBaseUrl,
+              },
+            });
+            break;
+          }
+          case 'full-screen': {
+            console.log('Opening Sidebar');
+            vscode.commands
+              .executeCommand('snip.showWebview')
+              .then(() =>
+                vscode.commands.executeCommand('workbench.action.closeSidebar'),
+              );
+            break;
+          }
           case 'logout': {
             console.log('Logging out');
             await Store.updateTokens('', '');
@@ -101,7 +133,7 @@ export class ExplorePanel {
   }
 
   public dispose() {
-    ExplorePanel.currentPanel = undefined;
+    SidebarFullScreenPanel.currentPanel = undefined;
 
     // Clean up our resources
     this._panel.dispose();
@@ -135,14 +167,22 @@ export class ExplorePanel {
     // Use a nonce to only allow a specific script to be run.
     const nonce = getNonce();
 
+    const wsApiBaseUrl = apiBaseUrl.replace(/^http/, 'ws');
+
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src ${apiBaseUrl}">
+        <meta http-equiv="Content-Security-Policy" content="default-src ${
+          apiBaseUrl.includes('https')
+            ? apiBaseUrl.replace('https', 'wss')
+            : apiBaseUrl.replace('http', 'ws')
+        } ${apiBaseUrl}; img-src https: data:; style-src 'unsafe-inline' ${
+          webview.cspSource
+        }; script-src 'nonce-${nonce}';">
         <link href="${styleUri}" rel="stylesheet">
-        <title>Snip Explore</title>
+        <title>VSnip</title>
         <script nonce="${nonce}">
           window.vscode = acquireVsCodeApi();
           window.apiBaseUrl = ${JSON.stringify(apiBaseUrl)};

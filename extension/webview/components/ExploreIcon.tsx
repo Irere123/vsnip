@@ -33,7 +33,7 @@ const ExploreIcon: React.FC<ExploreIconProps> = ({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-[color:var(--vscode-editor-foreground)]"
+        className="text-[color:var(--vscode-editor-foreground)] h-4 w-4"
       >
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />

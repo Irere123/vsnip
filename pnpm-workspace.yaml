@@ -1,7 +1,7 @@
 packages:
   - api
   - extension
-  - extension-2
+  - snip
   - web
 ignoredBuiltDependencies:
   - es5-ext

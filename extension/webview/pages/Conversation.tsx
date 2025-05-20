@@ -236,7 +236,7 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center mb-4 justify-between">
+      <div className="flex items-center mb-4  py-2 justify-between sticky top-0 z-20 bg-[color:var(--vscode-editor-background)]">
         <BackBar onBack={handleBack} className="mr-2" />
         {recipientInfo && (
           <div className="flex items-center">
@@ -245,7 +245,6 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
               alt={`${recipientInfo.username}'s avatar`}
               className="w-8 h-8 rounded-full mr-2"
             />
-            <h2 className="text-lg font-medium">{recipientInfo.username}</h2>
           </div>
         )}
       </div>
@@ -267,13 +266,14 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
           return (
             <div
               key={`group-${groupIndex}`}
-              className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} mb-4`}
+              className={`flex flex-col ${isCurrentUser ? 'items-start' : 'items-end'} mb-4`}
             >
               <div
-                className={`max-w-[75%] rounded-lg overflow-hidden ${isCurrentUser
-                  ? 'bg-[color:var(--vscode-editor-inactiveSelectionBackground)]'
-                  : 'bg-[color:var(--vscode-button-background)]'
-                  }`}
+                className={`max-w-[75%] rounded-lg overflow-hidden ${
+                  isCurrentUser
+                    ? 'bg-[color:var(--vscode-button-background)]'
+                    : 'bg-[color:var(--vscode-editor-inactiveSelectionBackground)]'
+                }`}
               >
                 {group.map((message, messageIndex) => (
                   <div
@@ -281,20 +281,22 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
                     className={`px-4 py-2 ${messageIndex !== group.length - 1 ? 'pb-1' : ''}`}
                   >
                     <p
-                      className={`mb-1 ${isCurrentUser
-                        ? 'text-[color:var(--vscode-editor-foreground)]'
-                        : 'text-[color:var(--vscode-button-foreground)]'
-                        }`}
+                      className={`mb-1 ${
+                        isCurrentUser
+                          ? 'text-[color:var(--vscode-editor-foreground)]'
+                          : 'text-[color:var(--vscode-button-foreground)]'
+                      }`}
                     >
                       {message.text}
                     </p>
 
                     {messageIndex === group.length - 1 && (
                       <div
-                        className={`text-xs ${isCurrentUser
-                          ? 'text-[color:var(--vscode-descriptionForeground)]'
-                          : 'text-[color:var(--vscode-button-foreground)] opacity-70'
-                          } text-right`}
+                        className={`text-xs ${
+                          isCurrentUser
+                            ? 'text-[color:var(--vscode-descriptionForeground)]'
+                            : 'text-[color:var(--vscode-button-foreground)] opacity-70'
+                        } text-right`}
                       >
                         {formatTime(message.createdAt)}
                       </div>
@@ -313,7 +315,7 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         placeholder="Type a message..."
-        className="flex-1 p-2 border border-[color:var(--vscode-input-border)] bg-[color:var(--vscode-input-background)] text-[color:var(--vscode-input-foreground)] rounded-l-md focus:outline-none sticky bottom-0"
+        className="flex-1 p-2 border border-[color:var(--vscode-input-border)] bg-[color:var(--vscode-input-background)] text-[color:var(--vscode-input-foreground)] rounded-l-md focus:outline-none sticky bottom-0 z-20"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();

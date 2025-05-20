@@ -7,7 +7,7 @@ interface LoadingSpinnerProps {
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ className }) => {
 
   return (
-    <div className='flex justify-center h-full w-full items-center'>
+    <div className='flex justify-center h-screen w-full items-center'>
       <div className={`h-5 w-5 ${className}`}>
         <div
           style={{

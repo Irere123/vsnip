@@ -1,172 +1,12 @@
-/**
- * WebSocket utilities for real-time communication using ReconnectingWebSocket
- */
 import type { Message } from './api';
 import { useAppContext } from '../context/AppContext';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 
 export type WebSocketMessage =
   | { type: 'new-message'; message: Message }
   | { type: 'unfriend'; userId: string }
   | { type: 'message-open'; userId: string | null };
-
-/**
- * A simple implementation of a reconnecting WebSocket
- * This class provides automatic reconnection with backoff
- */
-class ReconnectingWebSocket {
-  private url = '';
-  private socket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
-  private reconnectInterval = 1000;
-  private reconnectDecay = 1.5;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private forceClosed = false;
-
-  // Event callbacks
-  private onOpenCallbacks: (() => void)[] = [];
-  private onCloseCallbacks: (() => void)[] = [];
-  private onErrorCallbacks: ((event: Event) => void)[] = [];
-  private onMessageCallbacks: ((event: MessageEvent) => void)[] = [];
-
-  /**
-   * Connect to the WebSocket server
-   */
-  connect(url: string): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    this.url = url;
-    this.forceClosed = false;
-    this.createWebSocket();
-  }
-
-  /**
-   * Disconnect from the WebSocket server
-   */
-  disconnect(): void {
-    this.forceClosed = true;
-
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
-
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-
-    this.reconnectAttempts = 0;
-  }
-
-  /**
-   * Send data through the WebSocket
-   */
-  send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(data);
-    } else {
-      console.error('WebSocket is not connected. Cannot send data.');
-    }
-  }
-
-  /**
-   * Register a callback for open event
-   */
-  onOpen(callback: () => void): void {
-    this.onOpenCallbacks.push(callback);
-  }
-
-  /**
-   * Register a callback for close event
-   */
-  onClose(callback: () => void): void {
-    this.onCloseCallbacks.push(callback);
-  }
-
-  /**
-   * Register a callback for error event
-   */
-  onError(callback: (event: Event) => void): void {
-    this.onErrorCallbacks.push(callback);
-  }
-
-  /**
-   * Register a callback for message event
-   */
-  onMessage(callback: (event: MessageEvent) => void): void {
-    this.onMessageCallbacks.push(callback);
-  }
-
-  /**
-   * Create a new WebSocket instance and set up event listeners
-   */
-  private createWebSocket(): void {
-    try {
-      this.socket = new WebSocket(this.url);
-
-      this.socket.addEventListener('open', () => {
-        console.log('WebSocket connection established');
-        this.reconnectAttempts = 0;
-        this.onOpenCallbacks.forEach((callback) => callback());
-      });
-
-      this.socket.addEventListener('close', () => {
-        console.log('WebSocket connection closed');
-        this.onCloseCallbacks.forEach((callback) => callback());
-
-        if (!this.forceClosed) {
-          this.reconnect();
-        }
-      });
-
-      this.socket.addEventListener('error', (event) => {
-        console.error('WebSocket error:', event);
-        this.onErrorCallbacks.forEach((callback) => callback(event));
-      });
-
-      this.socket.addEventListener('message', (event) => {
-        this.onMessageCallbacks.forEach((callback) => callback(event));
-      });
-    } catch (error) {
-      console.error('Error creating WebSocket:', error);
-      this.reconnect();
-    }
-  }
-
-  /**
-   * Attempt to reconnect with exponential backoff
-   */
-  private reconnect(): void {
-    if (this.reconnectTimer || this.forceClosed) {
-      return;
-    }
-
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-
-      // Calculate the delay with exponential backoff
-      const delay =
-        this.reconnectInterval *
-        Math.pow(this.reconnectDecay, this.reconnectAttempts - 1);
-      console.log(
-        `Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
-      );
-
-      this.reconnectTimer = setTimeout(() => {
-        this.reconnectTimer = null;
-        this.createWebSocket();
-      }, delay);
-    } else {
-      console.error(
-        `Maximum reconnection attempts (${this.maxReconnectAttempts}) reached. Giving up.`,
-      );
-    }
-  }
-}
 
 /**
  * WebSocket manager for handling API communication
@@ -176,49 +16,85 @@ class WebSocketManager {
   private messageHandlers: ((message: WebSocketMessage) => void)[] = [];
   private isConnected = false;
   private currentChatUserId: string | null = null;
+  private currentUrl = ''; // Store the URL to avoid reconnecting to the same URL unnecessarily
+
+  public getIsConnected(): boolean {
+    return this.isConnected;
+  }
 
   constructor() {
     this.handleMessage = this.handleMessage.bind(this);
+    this.handleOpen = this.handleOpen.bind(this);
+    this.handleClose = this.handleClose.bind(this);
+    this.handleError = this.handleError.bind(this);
   }
 
   /**
    * Connect to the WebSocket server
    */
   connect(apiBaseUrl: string, accessToken: string, refreshToken: string): void {
-    // Create a new websocket if it doesn't exist
-    if (!this.webSocket) {
-      this.webSocket = new ReconnectingWebSocket();
-
-      // Set up message handler
-      this.webSocket.onMessage(this.handleMessage);
-
-      // Log connection events
-      this.webSocket.onOpen(() => {
-        console.log('WebSocket connected successfully');
-        this.isConnected = true;
-
-        // If there was an active chat when connection was established, notify server
-        if (this.currentChatUserId) {
-          this.setActiveChatUser(this.currentChatUserId);
-        }
-      });
-
-      this.webSocket.onClose(() => {
-        console.log('WebSocket disconnected');
-        this.isConnected = false;
-      });
-
-      this.webSocket.onError((error) => {
-        console.error('WebSocket error:', error);
-      });
-    }
-
     // Convert HTTP URL to WebSocket URL
     const wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws');
     const url = `${wsBaseUrl}/ws?accessToken=${accessToken}&refreshToken=${refreshToken}`;
 
-    // Connect to the WebSocket server
-    this.webSocket.connect(url);
+    // Avoid reconnecting if already connected to the same URL or if WebSocket is connecting/open
+    if (
+      this.webSocket &&
+      this.currentUrl === url &&
+      (this.webSocket.readyState === ReconnectingWebSocket.CONNECTING ||
+        this.webSocket.readyState === ReconnectingWebSocket.OPEN)
+    ) {
+      console.log('WebSocket already connecting or open to the same URL.');
+      return;
+    }
+
+    // If a WebSocket instance exists, close it before creating a new one
+    if (this.webSocket) {
+      this.webSocket.close();
+      // Remove old listeners
+      this.webSocket.removeEventListener('open', this.handleOpen);
+      this.webSocket.removeEventListener('close', this.handleClose);
+      this.webSocket.removeEventListener('error', this.handleError);
+      this.webSocket.removeEventListener('message', this.handleMessage);
+    }
+
+    this.currentUrl = url;
+    console.log('Attempting to connect WebSocket to:', url);
+    this.webSocket = new ReconnectingWebSocket(url, [], {
+      maxReconnectionDelay: 10000, // Default is 10000
+      minReconnectionDelay: 1000 + Math.random() * 4000, // Default is 1000, add jitter
+      reconnectionDelayGrowFactor: 1.3, // Default is 1.3
+      minUptime: 5000, // Default is 5000, time in ms that connection must be stable to reset attempts
+      connectionTimeout: 4000, // Default is 4000
+      maxRetries: Number.POSITIVE_INFINITY, // Changed from Infinity
+      // maxEnqueuedMessages: Infinity, // Default is Infinity
+      // binaryType: 'blob' // or 'arraybuffer'
+    });
+
+    // Set up event listeners
+    this.webSocket.addEventListener('open', this.handleOpen);
+    this.webSocket.addEventListener('close', this.handleClose);
+    this.webSocket.addEventListener('error', this.handleError);
+    this.webSocket.addEventListener('message', this.handleMessage);
+  }
+
+  private handleOpen(): void {
+    console.log('WebSocket connected successfully');
+    this.isConnected = true;
+    // If there was an active chat when connection was established, notify server
+    if (this.currentChatUserId) {
+      this.setActiveChatUser(this.currentChatUserId);
+    }
+  }
+
+  private handleClose(): void {
+    console.log('WebSocket disconnected');
+    this.isConnected = false;
+  }
+
+  private handleError(event: any): void {
+    console.error('WebSocket error:', event);
+    // The library handles reconnection, so we mainly log here.
   }
 
   /**
@@ -226,34 +102,51 @@ class WebSocketManager {
    */
   disconnect(): void {
     if (this.webSocket) {
-      // Clear active chat user
+      console.log('Disconnecting WebSocket.');
       this.setActiveChatUser(null);
-      this.webSocket.disconnect();
-      this.isConnected = false;
+      this.webSocket.close();
+      this.currentUrl = '';
     }
   }
 
-  /**
-   * Subscribe to WebSocket messages
-   */
   subscribe(handler: (message: WebSocketMessage) => void): () => void {
     this.messageHandlers.push(handler);
-
-    // Return an unsubscribe function
     return () => {
       this.messageHandlers = this.messageHandlers.filter((h) => h !== handler);
     };
   }
 
-  /**
-   * Set the user ID of the currently open chat
-   * This notifies the server that the user is actively viewing messages from this user
-   */
   setActiveChatUser(userId: string | null): void {
     this.currentChatUserId = userId;
+    if (
+      this.webSocket &&
+      this.webSocket.readyState === ReconnectingWebSocket.OPEN
+    ) {
+      try {
+        this.webSocket.send(JSON.stringify({ type: 'message-open', userId }));
+      } catch (error) {
+        console.error('Failed to send active chat user status:', error);
+      }
+    }
+  }
 
-    if (this.webSocket && this.isConnected) {
-      this.webSocket.send(JSON.stringify({ type: 'message-open', userId }));
+  /**
+   * Send a message through the WebSocket.
+   * The message should be a string, typically a JSON string.
+   */
+  send(data: string): void {
+    if (
+      this.webSocket &&
+      this.webSocket.readyState === ReconnectingWebSocket.OPEN
+    ) {
+      this.webSocket.send(data);
+    } else {
+      console.warn(
+        'WebSocket not open. Message not sent immediately, but reconnecting-websocket will queue it if configured (default is 0). For this app, we might want to handle this case, e.g., by queuing manually or notifying user.',
+      );
+      // reconnecting-websocket (by default) does not queue messages if send() is called while closed.
+      // If we want to ensure messages are sent after reconnection, we might need to queue them in WebSocketManager.
+      // However, for many use cases (like sending 'message-open'), it's fine if it's only sent when connected.
     }
   }
 
@@ -262,8 +155,12 @@ class WebSocketManager {
    */
   private handleMessage(event: MessageEvent): void {
     try {
-      const data = JSON.parse(event.data) as WebSocketMessage;
-      this.messageHandlers.forEach((handler) => handler(data));
+      if (typeof event.data === 'string') {
+        const data = JSON.parse(event.data) as WebSocketMessage;
+        this.messageHandlers.forEach((handler) => handler(data));
+      } else {
+        console.warn('Received non-string WebSocket message:', event.data);
+      }
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
     }
@@ -273,30 +170,39 @@ class WebSocketManager {
 // Export a singleton instance
 export const webSocketManager = new WebSocketManager();
 
-/**
- * React hook for using WebSocket
- */
 export const useWebSocket = () => {
   const { apiBaseUrl, accessToken, refreshToken, isAuthenticated } =
     useAppContext();
-  const [isConnected, setIsConnected] = useState(false);
 
-  // Initialize WebSocket connection when component mounts
   useEffect(() => {
-    if (apiBaseUrl && accessToken && refreshToken && isAuthenticated) {
-      console.log('Initializing WebSocket connection from hook');
-      webSocketManager.connect(apiBaseUrl, accessToken, refreshToken);
-      setIsConnected(true);
-
-      // Clean up WebSocket connection when component unmounts
-      return () => {
+    let isMounted = true;
+    const attemptConnect = () => {
+      if (
+        isMounted &&
+        isAuthenticated &&
+        apiBaseUrl &&
+        accessToken &&
+        refreshToken
+      ) {
+        console.log('useWebSocket: Attempting to connect WebSocket.');
+        webSocketManager.connect(apiBaseUrl, accessToken, refreshToken);
+      } else {
+        console.log(
+          'useWebSocket: Conditions not met for WebSocket connection, disconnecting.',
+        );
         webSocketManager.disconnect();
-        setIsConnected(false);
-      };
-    }
+      }
+    };
+
+    attemptConnect();
+
+    return () => {
+      isMounted = false;
+      console.log('useWebSocket: Cleaning up. Disconnecting WebSocket.');
+      webSocketManager.disconnect();
+    };
   }, [apiBaseUrl, accessToken, refreshToken, isAuthenticated]);
 
-  // Subscribe to WebSocket messages
   const subscribe = useCallback(
     (handler: (message: WebSocketMessage) => void) => {
       return webSocketManager.subscribe(handler);
@@ -304,17 +210,31 @@ export const useWebSocket = () => {
     [], // webSocketManager is stable, so no dependencies needed for subscribe
   );
 
-  // Set active chat user
-  const setActiveChatUser = useCallback(
-    (userId: string | null) => {
-      webSocketManager.setActiveChatUser(userId);
-    },
-    [], // webSocketManager is stable
-  );
+  const setActiveChatUser = useCallback((userId: string | null) => {
+    webSocketManager.setActiveChatUser(userId);
+  }, []);
+
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
+    try {
+      const messageString = JSON.stringify(message);
+      webSocketManager.send(messageString);
+    } catch (error) {
+      console.error('Failed to send WebSocket message:', error);
+    }
+  }, []);
+
+  // Note: isConnected state here might not be perfectly in sync with the actual WebSocket state
+  // without a more direct feedback mechanism from webSocketManager.
+  // For a more reactive `isConnected` status in the hook, `webSocketManager` would need to
+  // provide a way to subscribe to its internal connection status changes.
+  // For now, this hook primarily manages the lifecycle and provides an interface.
+  // Components can use the subscribe method to react to actual messages.
+  // The `webSocketManager.isConnected` could be exposed via a getter if needed,
+  // but making the hook's `isConnected` state reliably reactive requires more plumbing.
 
   return {
     subscribe,
-    isConnected,
     setActiveChatUser,
+    sendMessage,
   };
 };

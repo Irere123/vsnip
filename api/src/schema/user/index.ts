@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
-export const userEntity = pgTable('users', {
+export const users = pgTable('users', {
   id: uuid('id').default(sql`gen_random_uuid()`).primaryKey(),
   username: text('username').notNull(),
   avatar: text('avatar'),
@@ -13,4 +13,4 @@ export const userEntity = pgTable('users', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export type User = typeof userEntity.$inferSelect;
+export type User = typeof users.$inferSelect;

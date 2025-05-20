@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './providers/SidebarProvider';
-import { ExplorePanel } from './providers/ExplorePanel';
+import { SidebarFullScreenPanel } from './providers/SidebarFullScreenPanel';
 import { Store } from './Store';
 import { authenticate } from './authenticate';
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Extension "extension-2" is now active!');
+  console.log('Extension "snip" is now active!');
 
   // Initialize global state
   Store.globalState = context.globalState;
@@ -22,13 +22,16 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('extension-2.showWebview', () => {
-      ExplorePanel.createOrShow(context.extensionUri);
+    vscode.commands.registerCommand('snip.showWebview', () => {
+      SidebarFullScreenPanel.createOrShow(context.extensionUri);
     }),
+    vscode.commands.registerCommand("snip.hidePanel", () => {
+      sidebarProvider._view?.show();
+    })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('extension-2.authenticate', () => {
+    vscode.commands.registerCommand('snip.authenticate', () => {
       authenticate(() => {
         vscode.window.showInformationMessage('Successfully authenticated');
       });
@@ -36,7 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('extension-2.reloadWebview', async () => {
+    vscode.commands.registerCommand('snip.reloadWebview', async () => {
       await vscode.commands.executeCommand('workbench.action.closeSidebar');
       await vscode.commands.executeCommand(
         'workbench.view.extension.snip-sidebar-view',
@@ -51,4 +54,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }

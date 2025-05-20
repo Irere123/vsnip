@@ -102,9 +102,18 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-semibold mb-6">Edit Profile</h1>
+      <h1 className="text-xl text-center font-semibold mb-6">Edit Profile</h1>
 
       <div className="space-y-6">
+        {formData.avatar && (
+          <div className="flex justify-center my-4">
+            <img
+              src={formData.avatar}
+              alt="Avatar preview"
+              className="w-24 h-24 rounded-full border-2 border-[color:var(--vscode-button-background)]"
+            />
+          </div>
+        )}
         <div>
           <label className="block mb-2 font-medium">Username</label>
           <TextField
@@ -137,16 +146,6 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
             className="w-full"
           />
         </div>
-
-        {formData.avatar && (
-          <div className="flex justify-center my-4">
-            <img
-              src={formData.avatar}
-              alt="Avatar preview"
-              className="w-24 h-24 rounded-full border-2 border-[color:var(--vscode-button-background)]"
-            />
-          </div>
-        )}
 
         <div className="flex flex-grow space-x-3 pt-4">
           <Button onClick={handleSubmit} disabled={isSaving} className="flex-1">
