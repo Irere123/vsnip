@@ -29,6 +29,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@scalar/express-api-reference": "^0.8.1",
     "connect-redis": "^7.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
