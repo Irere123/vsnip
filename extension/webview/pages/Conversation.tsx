@@ -94,7 +94,7 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
         setMessages(sortedMessages);
 
         // Fetch user info for the conversation header
-        const userInfo = await query(`/user/${userId}`);
+        const userInfo = await query(`/users/${userId}`);
         setRecipientInfo({
           id: userInfo.id,
           username: userInfo.username,
@@ -169,15 +169,19 @@ const Conversation = ({ vscode, userId, onPageChange }: ConversationProps) => {
     setNewMessage('');
 
     try {
-      const response = await mutation('/message', {
+      const response = await mutation('/messages', {
         recipientId: userId,
         text: newMessage,
       });
 
-      if (response?.id) {
+      if (response?.message?.id) {
+        const receivedMessage = {
+          ...response.message,
+          createdAt: new Date(response.message.createdAt).getTime(),
+        };
         setMessages((prevMessages) =>
           prevMessages.map((msg) =>
-            msg.id === tempMessageId ? { ...response } : msg,
+            msg.id === tempMessageId ? receivedMessage : msg,
           ),
         );
       }

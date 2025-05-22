@@ -31,7 +31,7 @@ const Profile = ({ vscode, onPageChange }: ProfileProps) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const resp = await query('/me');
+        const resp = await query('/auth/me');
         setUser(resp.user);
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -101,12 +101,17 @@ const Profile = ({ vscode, onPageChange }: ProfileProps) => {
     <div>
       <div className="flex justify-end mb-4">
         <ExploreIcon onClick={handleExplore} />
-        <button type='button' onClick={() => {
-          setIsFullScreen(!isFullScreen)
-          vscode.postMessage({
-            type: "full-screen"
-          })
-        }}>{!isFullScreen ? "Fullscreen" : "Minimize"}</button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsFullScreen(!isFullScreen);
+            vscode.postMessage({
+              type: 'full-screen',
+            });
+          }}
+        >
+          {!isFullScreen ? 'Fullscreen' : 'Minimize'}
+        </button>
       </div>
 
       <div className="flex flex-col items-center p-6">

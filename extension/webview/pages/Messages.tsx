@@ -175,7 +175,7 @@ const Messages = ({ vscode, onPageChange }: MessagesProps) => {
   }
 
   return (
-    <div >
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-semibold">Messages</h1>
         <BackBar onBack={handleBack} />

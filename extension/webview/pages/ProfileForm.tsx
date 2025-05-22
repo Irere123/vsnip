@@ -32,7 +32,7 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const resp = await query('/me');
+        const resp = await query('/auth/me');
         setFormData({
           username: resp.user.username,
           email: resp.user.email,
@@ -59,7 +59,7 @@ const ProfileForm = ({ vscode, onPageChange }: ProfileFormProps) => {
     setIsSaving(true);
 
     try {
-      await mutation('/user', formData, { method: 'PUT' });
+      await mutation('/users/current', formData, { method: 'PUT' });
 
       vscode.postMessage({
         type: 'onInfo',

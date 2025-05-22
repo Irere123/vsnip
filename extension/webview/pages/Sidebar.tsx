@@ -24,7 +24,7 @@ const Sidebar = ({ onPageChange }: SidebarProps) => {
 
   const fetchUser = async () => {
     try {
-      const response = await query('/me');
+      const response = await query('/auth/me');
       const userData = response.user || response;
       setUser(userData);
       return userData;

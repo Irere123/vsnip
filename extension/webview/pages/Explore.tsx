@@ -10,7 +10,7 @@ import {
 import type { CommonProps } from '../shared/types';
 import SearchBar from '../components/SearchBar';
 
-interface ExploreProps extends CommonProps { }
+interface ExploreProps extends CommonProps {}
 
 const Explore = ({ vscode, onPageChange }: ExploreProps) => {
   const [loadingState, setLoadingState] = useState<'init' | 'ready' | 'more'>(
@@ -21,7 +21,7 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        const payload = (await query('/feed')) as FeedResponse;
+        const payload = (await query('/users/feed')) as FeedResponse;
         setProfiles(payload.profiles);
       } catch (error) {
         console.error('Error fetching profiles:', error);
@@ -36,7 +36,7 @@ const Explore = ({ vscode, onPageChange }: ExploreProps) => {
 
   const handleMessageUser = async (userId: string) => {
     try {
-      await mutation('/conversation', { userId });
+      await mutation('/conversations', { userId });
 
       if (onPageChange) {
         onPageChange('conversation', { userId });

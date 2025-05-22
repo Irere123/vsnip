@@ -47,7 +47,7 @@ const getVsCodeApi = () => {
     return {
       postMessage: (message: any) => console.log('VS Code message:', message),
       getState: () => ({}),
-      setState: () => { },
+      setState: () => {},
     };
   }
 
@@ -92,7 +92,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoadingProfile(true);
     try {
-      const response = await query('/me');
+      const response = await query('/auth/me');
       if (response?.user) {
         setUserProfile(response.user);
       }

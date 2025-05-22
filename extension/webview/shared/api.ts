@@ -216,10 +216,6 @@ export const mutation = async (
       },
     });
 
-    if (r.status !== 200) {
-      throw new Error(await r.text());
-    }
-
     const _accessToken = r.headers.get('access-token');
     const _refreshToken = r.headers.get('refresh-token');
 
